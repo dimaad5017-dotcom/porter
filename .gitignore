@@ -1,0 +1,38 @@
+# secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+
+# python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+dist/
+build/
+
+# node
+node_modules/
+.next/
+out/
+coverage/
+
+# editors / os
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# data / artifacts
+*.log
+*.sqlite3
+data/raw/
+data/interim/
