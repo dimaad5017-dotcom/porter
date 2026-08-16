@@ -12,6 +12,12 @@
       "runtimeExecutable": "python",
       "runtimeArgs": ["-m", "http.server", "8766", "--directory", "prototypes/plain"],
       "port": 8766
+    },
+    {
+      "name": "proto-light",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "8767", "--directory", "prototypes/light"],
+      "port": 8767
     }
   ]
 }

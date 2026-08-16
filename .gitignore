@@ -1,5 +1,10 @@
 # служебные worktree агентов
 .claude/worktrees/
+.claude/settings.local.json
+
+# скиллы ставятся через `npx skills add`, версии зафиксированы в skills-lock.json
+.agents/
+.claude/skills/
 
 # secrets
 .env
