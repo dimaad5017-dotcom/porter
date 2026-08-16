@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "proto-skills",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "8765", "--directory", "prototypes/skills"],
+      "port": 8765
+    },
+    {
+      "name": "proto-plain",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "8766", "--directory", "prototypes/plain"],
+      "port": 8766
+    }
+  ]
+}

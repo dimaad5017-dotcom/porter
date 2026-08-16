@@ -1,3 +1,6 @@
+# служебные worktree агентов
+.claude/worktrees/
+
 # secrets
 .env
 .env.*
