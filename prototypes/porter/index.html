@@ -637,6 +637,9 @@ button{ background:none; border:0; cursor:pointer; text-align:left; }
 .row__value{ display:block; font-size:15px; font-weight:600; letter-spacing:-.01em; }
 .row__label{ display:block; font-size:12.5px; color:var(--ink-2); margin-top:1px; }
 .row__extra{ flex:none; font-size:14px; font-weight:600; color:var(--ink-2); }
+/* Шаги пронумерованы не для красоты: порядок обязателен — код называют
+   после встречи, а встреча возможна только по билету. */
+.row__n{ font-size:15px; font-weight:800; color:var(--ink-2); font-variant-numeric:tabular-nums; }
 .row__chev{ flex:none; color:var(--ink-2); display:grid; place-items:center; }
 
 .check{
@@ -855,6 +858,7 @@ button{ background:none; border:0; cursor:pointer; text-align:left; }
   display:block; font-size:17px; font-weight:800; color:var(--ink);
   letter-spacing:.06em; font-variant-numeric:tabular-nums;
 }
+.code--fact b{ letter-spacing:-.02em; }
 .round{
   width:42px; height:42px; flex:none;
   border-radius:var(--r-pill);
@@ -1147,6 +1151,16 @@ const SIZES = [
 ];
 
 const MARKS = ['Вежливый', 'Быстро', 'Аккуратно с багажом', 'Помог с посадкой'];
+
+/* Услуга целиком, в порядке, в котором её проходит пассажир. */
+const HOW = [
+  ['Встречает у вагона',
+   'Вагон, платформу и время прибытия носильщик берёт из вашего билета'],
+  ['Забирает багаж по коду',
+   'Вы называете код из приложения — так видно, что багаж отдан своему носильщику'],
+  ['Доносит и снимает на камеру',
+   'Фотографирует багаж, когда принимает и когда отдаёт: спорить будет не о чем']
+];
 
 /* Чаевые фиксированной суммой: у переноски багажа нет чека, от которого
    считать проценты, — есть количество мест и физическая работа. */
@@ -1583,6 +1597,10 @@ function foot(html){
   $(host + '-foot').hidden = !html;
 }
 
+function fact(label, value){
+  return '<span class="code code--fact">' + label + '<b class="nums">' + value + '</b></span>';
+}
+
 function mainBtn(act, label, price, disabled){
   return '<button class="btn btn--main" type="button" data-act="' + act + '"' +
     (disabled ? ' disabled' : '') + '>' +
@@ -1766,10 +1784,6 @@ function zoneTree(pick){
     '</div>';
 }
 
-const ZMAP_NOTE = '<p class="note">Показываем точки обслуживания, а не план ' +
-  'вокзала: схемы объектов транспортной инфраструктуры — сведения ' +
-  'ограниченного доступа.</p>';
-
 function sheetZoneMap(){
   const st = stationOf();
   body(
@@ -1780,7 +1794,7 @@ function sheetZoneMap(){
         '<small>Путь всегда начинается у вашего вагона</small></div>' +
     '</div>' +
 
-    zoneTree(true) + ZMAP_NOTE
+    zoneTree(true)
   );
 }
 
@@ -2192,19 +2206,25 @@ function sheetStationInfo(id){
       '<div class="shead__txt"><b>' + s.name + '</b><small>' + s.dir + '</small></div>' +
     '</div>' +
     '<div class="card">' +
-      '<div class="foot"><span class="code">Подача<b class="nums">от ' + s.wait + ' мин</b></span>' +
-      '<span class="code">Носильщиков на смене<b class="nums">' + (4 + s.wait % 5) + '</b></span></div>' +
+      '<div class="foot">' +
+        fact('Подача', 'от ' + s.wait + ' мин') +
+        fact('Цена', 'от ' + money(Math.min.apply(null, SIZES.map(z => z.base)))) +
+        fact('На смене', 4 + s.wait % 5) +
+      '</div>' +
     '</div>' +
-    '<div class="group">Что делает носильщик</div>' +
-    '<p class="lead">Встречает у вагона на платформе, забирает багаж и доносит ' +
-      'до нужной точки вокзала. Работает в форменном жилете с номером: багаж ' +
-      'принимает по коду из приложения и снимает на камеру, когда отдаёт.</p>' +
-    '<p class="lead">Встреча всегда у вагона и только по билету — иначе носильщик ' +
-      'не знает ни платформы, ни времени прибытия. За территорию вокзала ' +
-      'носильщик не выходит: там начинается зона другой службы.</p>' +
+
+    '<div class="group">Как это работает</div>' +
+    '<div class="rows">' + HOW.map((h, i) =>
+      '<span class="row">' +
+        '<span class="row__ic row__n">' + (i + 1) + '</span>' +
+        '<span class="row__body">' +
+          '<span class="row__value">' + h[0] + '</span>' +
+          '<span class="row__label">' + h[1] + '</span>' +
+        '</span>' +
+      '</span>').join('') + '</div>' +
 
     '<div class="group">Куда доносим багаж</div>' +
-    zoneTree(false) + ZMAP_NOTE
+    zoneTree(false)
   );
 }
 
