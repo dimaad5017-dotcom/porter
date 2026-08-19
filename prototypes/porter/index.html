@@ -360,12 +360,6 @@ button{ background:none; border:0; cursor:pointer; text-align:left; }
 .stations::-webkit-scrollbar{ display:none; }
 .stations > *{ scroll-snap-align:center; }
 
-/* В шите выбора вокзала лента не нужна — там это именно список */
-.sheet .stations{
-  display:flex; flex-direction:column;
-  margin:0; padding:0; overflow:visible;
-}
-
 .stile{
   display:flex; flex-direction:column;
   background:var(--sand); color:var(--sand-fg);
@@ -382,8 +376,6 @@ button{ background:none; border:0; cursor:pointer; text-align:left; }
   background:var(--sand);
 }
 .stile__txt{ padding:12px 18px 18px; }
-.stile__row{ display:flex; align-items:center; gap:10px; }
-.stile__row .stile__nm{ flex:1; min-width:0; }
 .stile__nm{
   display:block; font-size:20px; font-weight:800; letter-spacing:-.03em;
 }
@@ -641,11 +633,6 @@ button{ background:none; border:0; cursor:pointer; text-align:left; }
    после встречи, а встреча возможна только по билету. */
 .row__n{ font-size:15px; font-weight:800; color:var(--ink-2); font-variant-numeric:tabular-nums; }
 .row__chev{ flex:none; color:var(--ink-2); display:grid; place-items:center; }
-/* Портрет носильщика вместо иконки: рисунок написан во всю плашку, поэтому
-   круг режет его по краю, а не оставляет поля. */
-.row__face{ border-radius:var(--r-pill); overflow:hidden; }
-.row__face svg{ width:100%; height:100%; display:block; }
-.row__rate{ display:flex; align-items:center; gap:4px; }
 
 .check{
   width:22px; height:22px; flex:none;
@@ -940,22 +927,19 @@ button{ background:none; border:0; cursor:pointer; text-align:left; }
 
 /* --- кабинет --- */
 .me{
-  display:flex; align-items:center; gap:12px;
-  background:var(--surface); border-radius:var(--r-card); padding:14px;
-  box-shadow:var(--shadow-card);
+  display:flex; align-items:center; gap:14px;
+  background:var(--invert); color:var(--invert-ink);
+  border-radius:var(--r-hero); padding:22px 20px;
+  box-shadow:var(--shadow-hero);
 }
 .me__ava{
-  width:52px; height:52px; flex:none; border-radius:var(--r-pill);
-  background:var(--invert); color:var(--invert-ink); display:grid; place-items:center;
-  font-size:16px; font-weight:700;
+  width:64px; height:64px; flex:none; border-radius:var(--r-pill);
+  background:color-mix(in srgb, var(--invert-ink) 15%, transparent);
+  color:var(--invert-ink); display:grid; place-items:center;
+  font-size:20px; font-weight:700;
 }
-.me__name{ display:block; font-size:17px; font-weight:700; letter-spacing:-.02em; }
-.me__phone{ display:block; font-size:13.5px; color:var(--ink-2); margin-top:1px; }
-
-.tiles{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-.stat{ background:var(--surface); border-radius:var(--r-card); padding:14px; box-shadow:var(--shadow-card); }
-.stat b{ display:block; font-size:24px; font-weight:800; letter-spacing:-.03em; }
-.stat span{ display:block; font-size:12.5px; color:var(--ink-2); margin-top:2px; }
+.me__name{ display:block; font-size:25px; font-weight:800; letter-spacing:-.035em; }
+.me__phone{ display:block; font-size:14.5px; opacity:.6; margin-top:3px; }
 
 @media (prefers-reduced-motion:reduce){
   .scan__line{ animation:none; top:50%; }
@@ -1178,9 +1162,9 @@ const PORTERS = [
 ];
 
 const HISTORY = [
-  { date:'12 августа', station:'Ярославский вокзал',   zone:'Зал прибытия',    sum:650, stars:5, porter:0 },
-  { date:'27 июля',    station:'Ленинградский вокзал', zone:'Платформа',       sum:450, stars:5, porter:2 },
-  { date:'3 июля',     station:'Курский вокзал',       zone:'Камера хранения', sum:350, stars:4, porter:0 }
+  { date:'12 августа', station:'Ярославский вокзал',   zone:'Зал прибытия',    sum:650, stars:5 },
+  { date:'27 июля',    station:'Ленинградский вокзал', zone:'Платформа',       sum:450, stars:5 },
+  { date:'3 июля',     station:'Курский вокзал',       zone:'Камера хранения', sum:350, stars:4 }
 ];
 
 const PHRASES = [
@@ -1209,12 +1193,6 @@ function icon(key, size, w){
   return '<svg width="' + (size || 20) + '" height="' + (size || 20) + '" viewBox="0 0 24 24" ' +
     'fill="none" stroke="currentColor" stroke-width="' + (w || 1.7) + '" ' +
     'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ICONS[key] + '</svg>';
-}
-
-function starSVG(size){
-  return '<svg width="' + (size || 17) + '" height="' + (size || 17) + '" viewBox="0 0 24 24" ' +
-    'fill="currentColor" aria-hidden="true">' +
-    '<path d="m12 3.6 2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.6 9.7l5.8-.8L12 3.6Z"/></svg>';
 }
 
 /* Портрет носильщика. Рисованный, а не фотография: настоящие снимки появятся,
@@ -1500,7 +1478,6 @@ const PAGES = {
 };
 
 const SHEETS = {
-  station: { title:'Вокзал',            render:sheetStation },
   stinfo:  { title:'Вокзал',            render:sheetStationInfo },
   zmap:    { title:'Карта зон',         render:sheetZoneMap },
   note:    { title:'Носильщик',         render:sheetNote }
@@ -2183,31 +2160,6 @@ function resetOrder(){
    ОСТАЛЬНЫЕ ШИТЫ
    ========================================================================= */
 
-function sheetStation(){
-  const locked = !!state.trip;
-  body(
-    (locked
-      ? '<p class="lead">Вокзал взят из билета ' + state.trip.train +
-        ' — сменить нельзя. Отсканируйте другой билет, если едете иным рейсом.</p>'
-      : '<p class="lead">Работаем на трёх вокзалах Москвы. От вокзала зависят ' +
-        'зоны передачи, цена и время подачи.</p>') +
-    '<div class="stations">' + STATIONS.map(s =>
-      '<button class="stile" type="button" ' + (locked ? 'disabled' : 'data-act="pick-station"') +
-        ' data-id="' + s.id + '" style="' + (locked ? 'opacity:.5' : '') + '">' +
-        photo(PHOTOS.station[s.id], s.name, 'stile__art',
-              '<span class="stile__art ph">фото вокзала</span>') +
-        '<span class="stile__txt">' +
-          '<span class="stile__row">' +
-            '<span class="stile__nm">' + s.short + '</span>' +
-            '<span class="check' + (s.id === stationOf().id ? ' on' : '') + '">' +
-              icon('check', 13, 2.4) + '</span>' +
-          '</span>' +
-          '<span class="stile__sub">' + s.dir + ' · подача от ' + s.wait + ' мин</span>' +
-        '</span>' +
-      '</button>').join('') + '</div>'
-  );
-}
-
 function sheetStationInfo(id){
   const s = STATIONS.find(x => x.id === id) || stationOf();
   body(
@@ -2259,7 +2211,8 @@ function sheetHistory(){
    Повтор остался, но отдельной подписанной кнопкой внизу. */
 function sheetPastOrder(arg){
   const h = HISTORY[+arg || 0];
-  const star = starSVG(17);
+  const star = '<svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">' +
+    '<path d="m12 3.6 2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.6 9.7l5.8-.8L12 3.6Z"/></svg>';
 
   const line = (label, value, extra) =>
     '<span class="row">' +
@@ -2283,53 +2236,19 @@ function sheetPastOrder(arg){
   foot(mainBtn('repeat', 'Повторить заказ'));
 }
 
-/* Носильщики пассажира: по одной строке на человека, а не на заказ. Тап ведёт
-   в последний заказ с ним — так строка обещает ровно то, что открывает. */
-function myPorters(){
-  const seen = {};
-  HISTORY.forEach((h, i) => {
-    const p = seen[h.porter];
-    if(p) p.cnt++;
-    else seen[h.porter] = { p:PORTERS[h.porter], i:i, cnt:1 };
-  });
-  return Object.keys(seen).map(k => seen[k]);
-}
-
 function sheetMe(){
-  const n = HISTORY.length;
-  const spent = HISTORY.reduce((a, h) => a + h.sum, 0);
-
-  const porterRow = (r) =>
-    '<button class="row" type="button" data-act="past" data-i="' + r.i + '">' +
-      '<span class="row__ic row__face">' + faceSVG(r.p) + '</span>' +
-      '<span class="row__body">' +
-        '<span class="row__value">' + r.p.name + '</span>' +
-        '<span class="row__label">Жилет ' + r.p.vest + ' · ' + r.cnt + ' ' +
-          plural(r.cnt, 'заказ', 'заказа', 'заказов') + '</span>' +
-      '</span>' +
-      '<span class="row__extra row__rate">' + starSVG(14) + r.p.rating + '</span>' +
-      '<span class="row__chev">' + icon('chev', 18, 2) + '</span>' +
-    '</button>';
-
   body(
     '<div class="me">' +
       '<span class="me__ava">ДА</span>' +
       '<span><span class="me__name">Дмитрий</span><span class="me__phone nums">+7 900 123-45-67</span></span>' +
     '</div>' +
-    '<div class="tiles">' +
-      '<div class="stat"><b class="nums">' + n + '</b><span>' + plural(n, 'заказ', 'заказа', 'заказов') + '</span></div>' +
-      '<div class="stat"><b class="nums">' + money(spent) + '</b><span>за всё время</span></div>' +
-    '</div>' +
-
-    '<div class="group">Ваши носильщики</div>' +
-    '<div class="rows">' + myPorters().map(porterRow).join('') + '</div>' +
-
-    '<div class="group">Настройки</div>' +
     '<div class="list">' +
-      '<button class="li" type="button" data-act="go" data-to="history">История заказов<span class="meta">' + n + '</span></button>' +
-      '<button class="li" type="button" data-act="pay">Способ оплаты<span class="meta nums">•••• 4417</span></button>' +
-      '<button class="li" type="button" data-act="stations">Вокзал<span class="meta">' + stationOf().short + '</span></button>' +
-      '<button class="li" type="button" data-act="support">Поддержка<span class="meta">Круглосуточно</span></button>' +
+      '<button class="li" type="button" data-act="go" data-to="history">История заказов' +
+        '<span class="meta">' + HISTORY.length + '</span></button>' +
+      '<button class="li" type="button" data-act="pay">Способ оплаты' +
+        '<span class="meta nums">•••• 4417</span></button>' +
+      '<button class="li" type="button" data-act="support">Поддержка' +
+        '<span class="meta">Круглосуточно</span></button>' +
       '<button class="li" type="button" data-act="theme">Тёмная тема' +
         '<span class="sw' + (isDark() ? ' on' : '') + '" aria-hidden="true"><i></i></span>' +
       '</button>' +
@@ -2548,24 +2467,6 @@ function onAct(e){
   if(act === 'go')       return pushPage(el.dataset.to);
   if(act === 'past')     return pushPage('past', el.dataset.i);
   if(act === 'repeat')   return repeatLast(pages[pages.length - 1].arg);
-  if(act === 'stations') return openSheet('station');
-
-  if(act === 'pick-station'){
-    state.station = el.dataset.id;
-    say('Вокзал: ' + stationOf().name);
-    closeSheet();
-    renderHome();
-    if(pages.length) paintPage();
-    return;
-  }
-
-  /* Из карточки вокзала — сразу в заказ, вокзал уже выбран */
-  if(act === 'call-here'){
-    state.station = stack[stack.length - 1].arg || state.station;
-    closeSheet();
-    renderHome();
-    return openPorter();
-  }
 
   /* Тёмная тема — переключателем в кабинете, а не системной настройкой */
   if(act === 'theme'){ toggleTheme(); return paintPage(); }
