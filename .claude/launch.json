@@ -18,6 +18,18 @@
       "runtimeExecutable": "python",
       "runtimeArgs": ["-m", "http.server", "8767", "--directory", "prototypes/light"],
       "port": 8767
+    },
+    {
+      "name": "proto-ticket",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "8768", "--directory", "prototypes/ticket"],
+      "port": 8768
+    },
+    {
+      "name": "proto-porter",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "8771", "--directory", "prototypes/porter"],
+      "port": 8771
     }
   ]
 }

@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ВСМ 704 — Москва · Санкт-Петербург</title>
+<style>
+/* ============================================================
+   ВСМ — приложение пассажира. Версия «билет».
+
+   Опора не на дизайн-систему, а на физический предмет:
+   бумажный билет с перфорацией, корешком и машинной печатью.
+   Отсюда все решения — фактура бумаги, дырчатый край,
+   моноширинный шрифт на служебных данных, красная печать.
+
+   Сознательно НЕ используется:
+   — мелкая заглавная подпись над крупным значением
+     (главный признак сгенерированного дашборда);
+   — одинаковые скруглённые карточки равного размера;
+   — симметрия и центрирование всего подряд.
+   ============================================================ */
+
+*{margin:0;padding:0;box-sizing:border-box}
+
+:root{
+  --paper:#faf7f0;        /* бумага билета */
+  --paper-2:#f0ebdf;      /* тень на сгибе, корешок */
+  --ink:#1b1a17;          /* типографская краска */
+  --ink-2:#4a4740;
+  --ink-3:#6d685d;
+  --stamp:#c0392b;        /* красная печать — акцент */
+  --stamp-2:#9c2b1f;
+  --seal:#2b4c7e;         /* синяя защитная печать, служебное */
+  --rule:#d8d1c0;
+  --rule-2:#bdb5a1;       /* штрихи разметки платформы */
+  --desk:#2a2723;         /* стол, на котором лежит телефон */
+}
+
+html,body{height:100%}
+body{
+  background:var(--desk);
+  font-family:Corbel,Candara,"Segoe UI",sans-serif;
+  color:var(--ink);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:20px;padding:28px 16px;min-height:100%;
+}
+
+/* ---------- корпус телефона ---------- */
+.phone{
+  width:390px;height:812px;border-radius:38px;
+  background:var(--paper);
+  position:relative;overflow:hidden;flex:none;
+  box-shadow:0 30px 70px rgba(0,0,0,.5),0 2px 0 rgba(255,255,255,.08) inset;
+}
+/* волокно бумаги — едва заметная крапчатость */
+.phone::after{
+  content:"";position:absolute;inset:0;pointer-events:none;z-index:70;opacity:.5;
+  background-image:
+    radial-gradient(circle at 20% 30%,rgba(120,100,60,.05) 0 1px,transparent 1px),
+    radial-gradient(circle at 70% 60%,rgba(120,100,60,.045) 0 1px,transparent 1px),
+    radial-gradient(circle at 45% 85%,rgba(120,100,60,.04) 0 1px,transparent 1px);
+  background-size:37px 41px,53px 47px,29px 61px;
+}
+
+.bar{
+  height:44px;flex:none;display:flex;align-items:flex-end;justify-content:space-between;
+  padding:0 24px 6px;font-family:Consolas,"Cascadia Mono",monospace;
+  font-size:12.5px;color:var(--ink);letter-spacing:.02em;position:relative;z-index:10;
+}
+.bar svg{display:block}
+
+.screen{
+  position:absolute;left:0;right:0;top:44px;bottom:62px;
+  overflow-y:auto;overflow-x:hidden;padding:0 0 20px;
+  display:none;
+}
+.screen.on{display:block;animation:up .3s cubic-bezier(.2,.7,.2,1)}
+@keyframes up{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+.screen::-webkit-scrollbar{display:none}
+
+.pad{padding:0 24px}
+
+/* ---------- заголовки: без заглавных микроподписей ---------- */
+h1{
+  font-family:Bahnschrift,"DIN Alternate","Franklin Gothic Medium",sans-serif;
+  font-weight:600;font-size:29px;line-height:1.08;letter-spacing:-.015em;
+}
+h2{
+  font-family:Bahnschrift,"DIN Alternate","Franklin Gothic Medium",sans-serif;
+  font-weight:600;font-size:19px;letter-spacing:-.01em;margin-bottom:9px;
+}
+p{font-size:14.5px;line-height:1.5;color:var(--ink-2)}
+b{font-weight:600;color:var(--ink)}
+.mono{font-family:Consolas,"Cascadia Mono",monospace;font-variant-numeric:tabular-nums}
+.dim{color:var(--ink-3)}
+
+/* ---------- БИЛЕТ ---------- */
+.ticket{
+  margin:0 16px;background:#fff;position:relative;
+  border:1px solid var(--rule);border-radius:3px;   /* бумага не скруглена на 24px */
+  box-shadow:0 1px 0 rgba(0,0,0,.04);
+}
+.ticket-head{
+  padding:11px 18px 9px;display:flex;align-items:baseline;justify-content:space-between;
+  border-bottom:1px solid var(--rule);
+}
+.brand{
+  font-family:Bahnschrift,"DIN Alternate",sans-serif;font-weight:700;
+  font-size:15px;letter-spacing:.14em;color:var(--stamp);
+}
+.ticket-no{font-family:Consolas,monospace;font-size:12px;color:var(--ink-3);letter-spacing:.06em}
+
+/* маршрут — крупно, асимметрично, без подписей «откуда/куда» */
+.route{padding:13px 18px 2px}
+.route .a,.route .b{
+  font-family:Bahnschrift,"DIN Alternate",sans-serif;font-weight:600;
+  font-size:26px;line-height:1.08;letter-spacing:-.02em;
+}
+.route .station{font-size:12.5px;color:var(--ink-3);margin-top:1px}
+.arrow{
+  display:flex;align-items:center;gap:7px;margin:7px 0 6px;color:var(--ink-3);
+}
+.arrow .line{flex:1;height:1px;background:repeating-linear-gradient(90deg,var(--rule) 0 4px,transparent 4px 8px)}
+.arrow .t{font-family:Consolas,monospace;font-size:11.5px;letter-spacing:.04em}
+
+/* строки данных — как на печатном бланке: подпись СЛЕВА в строку, не сверху */
+.rows{padding:4px 18px 11px}
+.row{
+  display:flex;align-items:baseline;gap:10px;padding:4px 0;
+  font-size:13.5px;
+}
+.row .k{color:var(--ink-3);white-space:nowrap}
+.row .fill{flex:1;height:1px;background:repeating-linear-gradient(90deg,var(--rule) 0 2px,transparent 2px 5px);transform:translateY(-3px)}
+.row .v{font-family:Consolas,monospace;font-size:13.5px;font-variant-numeric:tabular-nums;color:var(--ink)}
+
+/* перфорация — отрывной корешок */
+.perf{
+  position:relative;height:1px;margin:0 0 0;
+  background:repeating-linear-gradient(90deg,var(--rule) 0 5px,transparent 5px 10px);
+}
+.perf::before,.perf::after{
+  content:"";position:absolute;top:-9px;width:18px;height:18px;border-radius:50%;
+  background:var(--paper);border:1px solid var(--rule);
+}
+.perf::before{left:-10px}
+.perf::after{right:-10px}
+
+.stub{
+  padding:11px 18px 12px;background:var(--paper-2);
+  display:flex;align-items:center;justify-content:space-between;gap:14px;
+  border-radius:0 0 3px 3px;
+}
+.stub .big{
+  font-family:Bahnschrift,"DIN Alternate",sans-serif;font-weight:700;
+  font-size:34px;line-height:1;letter-spacing:-.02em;font-variant-numeric:tabular-nums;
+}
+.stub .cap{font-size:11.5px;color:var(--ink-3);margin-top:3px}
+.barcode{display:flex;align-items:flex-end;gap:1.5px;height:38px}
+.barcode i{display:block;background:var(--ink);width:2px;border-radius:.5px}
+
+/* отсчёт — крупно, свисает в поле, не по сетке */
+.count{
+  margin:20px 0 0;padding:0 24px;display:flex;align-items:baseline;gap:11px;
+}
+.count .n{
+  font-family:Consolas,monospace;font-weight:700;font-size:41px;letter-spacing:-.03em;
+  font-variant-numeric:tabular-nums;color:var(--stamp);margin-left:-2px;
+}
+.count .w{font-size:14px;color:var(--ink-2);line-height:1.35}
+
+/* ---------- чипы ---------- */
+.with{padding:16px 24px 0}
+.chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:9px}
+.chip{
+  font:inherit;font-size:13.5px;cursor:pointer;
+  padding:8px 14px;border-radius:2px;                 /* прямоугольные, как штампы */
+  background:transparent;border:1px solid var(--rule);color:var(--ink-2);
+  transition:transform .12s,background .18s,border-color .18s,color .18s;
+}
+.chip:hover{border-color:var(--ink-3)}
+.chip:active{transform:scale(.97)}
+/* включённый чип — чёрная типографская заливка, как «мой вагон» и как
+   главная кнопка. Красный на билете держится за печатью и предупреждением,
+   четыре красных плашки подряд перетянули бы на себя весь экран. */
+.chip.on{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+.chip:focus-visible,button:focus-visible{outline:2px solid var(--seal);outline-offset:2px}
+
+/* ---------- сводка пересчёта ---------- */
+.calc{
+  margin:15px 24px 0;padding:13px 0 0;border-top:2px solid var(--ink);
+}
+.calc .top{display:flex;align-items:baseline;gap:9px}
+.calc .num{
+  font-family:Bahnschrift,"DIN Alternate",sans-serif;font-weight:700;
+  font-size:52px;line-height:.9;letter-spacing:-.03em;font-variant-numeric:tabular-nums;
+}
+.calc .unit{font-size:15px;color:var(--ink-2)}
+.calc p{margin-top:8px}
+
+/* ---------- маршрут ---------- */
+.steps{margin:16px 0 0;padding:0 24px}
+.step{padding:13px 0;border-bottom:1px solid var(--rule);display:flex;gap:13px}
+.step:last-child{border-bottom:0}
+.step .time{
+  font-family:Consolas,monospace;font-size:13px;color:var(--ink-3);
+  font-variant-numeric:tabular-nums;padding-top:2px;width:42px;flex:none;
+}
+.step .body{flex:1}
+.step .name{font-family:Bahnschrift,sans-serif;font-weight:600;font-size:16px;letter-spacing:-.005em}
+.step .name .m{font-family:Consolas,monospace;font-size:13px;color:var(--stamp);margin-left:7px;font-weight:400}
+.step .note{font-size:13.5px;color:var(--ink-2);margin-top:3px;line-height:1.45}
+/* красная полоса слева — единственная роль: шаг требует лифта */
+.step.lift{border-left:3px solid var(--stamp);padding-left:11px;margin-left:-14px}
+
+/* ---------- платформа ---------- */
+/* поезд уезжает за оба края экрана — не центрированный ряд коробок */
+.train-wrap{margin:18px 0 0;overflow:hidden}
+.rail{width:max-content;transition:transform .5s cubic-bezier(.2,.7,.2,1)}
+.train{display:flex;gap:3px;width:max-content}
+.edge{height:1px;background:var(--ink);margin-top:0}   /* кромка платформы, уходит за оба края */
+.car{
+  width:58px;height:44px;flex:none;border:1px solid var(--rule);background:#fff;
+  border-radius:2px 2px 2px 2px;position:relative;
+  display:flex;align-items:center;justify-content:center;
+  font-family:Consolas,monospace;font-size:12.5px;color:var(--ink-3);
+}
+.car.me{background:var(--ink);border-color:var(--ink);color:#fff;font-weight:700}
+.car.head{width:34px;border-radius:16px 2px 2px 16px;background:var(--paper-2)}
+/* двери */
+.car::before,.car::after{
+  content:"";position:absolute;bottom:-1px;width:7px;height:3px;background:var(--rule);
+}
+.car::before{left:12px}
+.car::after{right:12px}
+.car.me::before,.car.me::after{background:var(--stamp)}
+
+.ruler{height:26px;position:relative}
+.ruler i{position:absolute;top:0;width:1px;height:6px;background:var(--rule-2)}
+.ruler b{
+  position:absolute;top:9px;transform:translateX(-50%);
+  font-family:Consolas,monospace;font-size:10.5px;color:var(--ink-3);font-weight:400;
+  transition:color .3s;
+}
+.ruler b.on{color:var(--stamp);font-weight:700}
+/* «вы» — короткий красный штрих у нужной двери; подпись не нужна,
+   заголовок экрана и так называет номер метки */
+.you{
+  position:absolute;top:0;transform:translateX(-50%);
+  transition:left .5s cubic-bezier(.2,.7,.2,1);
+}
+.you .pin{width:2px;height:7px;background:var(--stamp);margin:0 auto}
+.you .lab{
+  display:none;
+  font-family:Bahnschrift,sans-serif;font-size:11px;font-weight:600;color:var(--stamp);
+  white-space:nowrap;margin-top:1px;
+}
+
+/* предупреждение — не плашка со скруглением, а печать на бумаге */
+.warnstamp{
+  margin:22px 24px 0;padding:11px 14px;
+  border:2px solid var(--stamp);color:var(--stamp);
+  transform:rotate(-.7deg);                      /* штамп поставлен от руки */
+  background:rgba(192,57,43,.045);
+}
+.warnstamp .t{
+  font-family:Bahnschrift,sans-serif;font-weight:700;font-size:17px;letter-spacing:.01em;
+}
+.warnstamp .s{font-size:13px;margin-top:3px;color:var(--stamp-2);line-height:1.4}
+
+/* ---------- багаж ---------- */
+.locker{
+  display:block;width:100%;text-align:left;font:inherit;cursor:pointer;
+  padding:12px 14px;background:transparent;border:1px solid var(--rule);
+  border-radius:2px;margin-bottom:7px;transition:border-color .18s,background .18s;
+}
+.locker:hover{border-color:var(--ink-3)}
+.locker.on{border-color:var(--ink);background:#fff}
+.locker .n{font-family:Bahnschrift,sans-serif;font-weight:600;font-size:15px}
+.locker .d{font-size:13px;color:var(--ink-3);margin-top:2px}
+
+.progress{margin:16px 0 0;height:2px;background:var(--rule);position:relative}
+.progress i{position:absolute;left:0;top:0;height:100%;background:var(--stamp);transition:width .6s ease}
+
+.cta{
+  margin:22px 24px 0;width:calc(100% - 48px);padding:15px;
+  font:inherit;font-size:15.5px;font-weight:600;cursor:pointer;
+  font-family:Bahnschrift,sans-serif;letter-spacing:.01em;
+  background:var(--ink);color:var(--paper);border:0;border-radius:2px;
+  transition:transform .12s,background .18s;
+}
+.cta:active{transform:scale(.985)}
+.cta:hover{background:#000}
+
+.trouble{
+  display:block;margin:26px auto 8px;font:inherit;font-size:13.5px;
+  background:none;border:0;color:var(--ink-3);cursor:pointer;
+  text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--rule);
+}
+
+/* ---------- вкладки ---------- */
+.tabs{
+  position:absolute;left:0;right:0;bottom:0;height:62px;z-index:20;
+  background:var(--paper);border-top:1px solid var(--rule);
+  display:flex;align-items:center;
+}
+.tab{
+  flex:1;font:inherit;background:none;border:0;cursor:pointer;padding:0;
+  font-family:Bahnschrift,sans-serif;font-size:12.5px;color:var(--ink-3);
+  height:100%;position:relative;transition:color .18s;
+}
+.tab.on{color:var(--ink);font-weight:600}
+.tab.on::before{
+  content:"";position:absolute;top:-1px;left:50%;transform:translateX(-50%);
+  width:26px;height:2px;background:var(--stamp);
+}
+
+/* ---------- модалка ---------- */
+.scrim{
+  position:absolute;inset:0;z-index:40;background:rgba(27,26,23,.45);
+  opacity:0;pointer-events:none;transition:opacity .28s;
+}
+.scrim.on{opacity:1;pointer-events:auto}
+/* Закрытая шторка убирается и по transform, и по visibility.
+   Одного сдвига мало: он считается от высоты самой шторки, а она
+   зависит от содержимого — при длинном тексте край вылезал обратно в кадр. */
+.sheet{
+  position:absolute;left:0;right:0;bottom:0;z-index:50;
+  background:var(--paper);border-top:2px solid var(--ink);
+  padding:22px 24px 26px;
+  transform:translateY(100%);visibility:hidden;
+  transition:transform .32s cubic-bezier(.2,.7,.2,1), visibility 0s linear .32s;
+}
+.sheet.on{
+  transform:none;visibility:visible;
+  transition:transform .32s cubic-bezier(.2,.7,.2,1), visibility 0s;
+}
+.sheet h2{margin-bottom:7px}
+
+.caption{
+  color:#8b857a;font-size:12px;letter-spacing:.02em;text-align:center;
+  font-family:Consolas,monospace;
+}
+
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.01ms!important;transition-duration:.01ms!important}
+}
+</style>
+</head>
+<body>
+
+<div class="phone">
+
+  <div class="bar">
+    <span class="mono" id="clock">17:24</span>
+    <span style="display:flex;gap:6px;align-items:center">
+      <svg width="17" height="11" viewBox="0 0 17 11" fill="none" aria-hidden="true">
+        <rect x="0" y="7" width="3" height="4" fill="#1b1a17"/><rect x="4.5" y="5" width="3" height="6" fill="#1b1a17"/>
+        <rect x="9" y="2.5" width="3" height="8.5" fill="#1b1a17"/><rect x="13.5" y="0" width="3" height="11" fill="#1b1a17"/>
+      </svg>
+      <svg width="24" height="11" viewBox="0 0 24 11" fill="none" aria-hidden="true">
+        <rect x=".5" y=".5" width="20" height="10" rx="2.5" stroke="#1b1a17"/>
+        <rect x="2" y="2" width="14" height="7" rx="1" fill="#1b1a17"/>
+        <path d="M22 4v3a2 2 0 0 0 0-3z" fill="#1b1a17"/>
+      </svg>
+    </span>
+  </div>
+
+  <!-- ============ 1. ПОЕЗДКА ============ -->
+  <section class="screen on" id="s-trip">
+    <div class="pad" style="padding-top:10px;padding-bottom:12px">
+      <h1>Дмитрий, поезд<br>через <span class="mono" id="h-left" style="font-size:29px">1 ч 41 мин</span></h1>
+      <p style="margin-top:6px">Воскресенье, 16 августа. Билет показывать не нужно.</p>
+    </div>
+
+    <!-- билет как предмет -->
+    <div class="ticket">
+      <div class="ticket-head">
+        <span class="brand">ВСМ</span>
+        <span class="ticket-no">70 4213 892 041</span>
+      </div>
+
+      <div class="route">
+        <div class="a">Москва</div>
+        <div class="station">Ленинградский вокзал</div>
+        <div class="arrow">
+          <span class="t">17:39</span>
+          <span class="line"></span>
+          <span class="t">2 ч 15 мин</span>
+          <span class="line"></span>
+          <span class="t">19:54</span>
+        </div>
+        <div class="b">Санкт-Петербург</div>
+        <div class="station">Московский вокзал</div>
+      </div>
+
+      <div class="rows">
+        <div class="row"><span class="k">Остановки</span><span class="fill"></span><span class="v">Тверь · Валдай · В. Новгород</span></div>
+        <div class="row"><span class="k">Платформа</span><span class="fill"></span><span class="v">3, путь 7</span></div>
+        <div class="row"><span class="k">Отправление через</span><span class="fill"></span><span class="v" id="cd">01:41:09</span></div>
+      </div>
+
+      <div class="perf"></div>
+
+      <div class="stub">
+        <div>
+          <div class="big">7 · 12</div>
+          <div class="cap">вагон и место</div>
+        </div>
+        <div class="barcode" id="barcode" aria-hidden="true"></div>
+      </div>
+    </div>
+
+    <div class="with">
+      <h2>Кто едет с вами</h2>
+      <p>От этого зависит путь по вокзалу и место на платформе.</p>
+      <div class="chips" id="chips">
+        <button class="chip" data-k="child">Ребёнок</button>
+        <button class="chip" data-k="stroller">Коляска</button>
+        <button class="chip" data-k="bags">Крупный багаж</button>
+        <button class="chip" data-k="help">Нужна помощь</button>
+      </div>
+    </div>
+
+    <div class="calc">
+      <div class="top">
+        <span class="num" id="walk">5</span>
+        <span class="unit">минут по вокзалу</span>
+      </div>
+      <p id="walk-note">Эскалаторы, самый короткий путь. Выходить из дома в <b class="mono">17:21</b>.</p>
+    </div>
+
+    <button class="trouble" data-sheet>Что-то пошло не так</button>
+  </section>
+
+  <!-- ============ 2. МАРШРУТ ============ -->
+  <section class="screen" id="s-route">
+    <div class="pad" style="padding-top:12px">
+      <h1>Путь до места</h1>
+      <p style="margin-top:7px" id="route-lead">Через эскалаторы. Быть у входа в <b class="mono">17:21</b>.</p>
+    </div>
+    <div class="steps" id="steps"></div>
+  </section>
+
+  <!-- ============ 3. ПЛАТФОРМА ============ -->
+  <section class="screen" id="s-plat">
+    <div class="pad" style="padding-top:12px">
+      <h1>Встаньте у метки <span class="mono" id="mark" style="font-size:29px;color:var(--stamp)">7</span></h1>
+      <p style="margin-top:7px" id="door-note">Здесь остановится дверь вашего вагона. Платформа 3, поезд подойдёт головой со стороны Москвы.</p>
+    </div>
+
+    <!-- поезд и разметка платформы живут в одной системе координат:
+         оба лежат внутри .rail и сдвигаются одним transform, иначе
+         метка «вы» уезжает относительно двери вагона -->
+    <div class="train-wrap">
+      <div class="rail" id="rail">
+        <div class="train" id="train"></div>
+        <div class="edge"></div>
+        <div class="ruler" id="ruler"></div>
+      </div>
+    </div>
+
+    <div class="pad" style="margin-top:14px">
+      <div class="row" style="border-top:1px solid var(--rule);padding-top:11px">
+        <span class="k">Поезд подойдёт через</span><span class="fill"></span>
+        <span class="v" id="arrive">1:32:24</span>
+      </div>
+    </div>
+
+    <div class="warnstamp">
+      <div class="t">Стоянка 2 минуты</div>
+      <div class="s" id="warn-note">Это вдвое меньше обычного поезда. Не отходите от метки.</div>
+    </div>
+
+    <!-- раскладка стоянки по секундам: пассажир должен понимать,
+         на что уходят эти две минуты, а не просто бояться их -->
+    <div class="pad" style="margin-top:16px">
+      <p style="margin-bottom:8px">Как пройдут эти две минуты у вашей двери:</p>
+      <div id="stop-plan"></div>
+    </div>
+
+    <button class="trouble" data-sheet>Что-то пошло не так</button>
+  </section>
+
+  <!-- ============ 4. БАГАЖ ============ -->
+  <section class="screen" id="s-bag">
+    <div class="pad" style="padding-top:12px">
+      <h1>Багаж поедет<br>без вас</h1>
+      <p style="margin-top:7px">Оставьте чемоданы в локере на вокзале. Они поедут этим же поездом и будут ждать вас в отеле.</p>
+    </div>
+
+    <div class="pad" style="margin-top:18px" id="bag-choose">
+      <h2>Где оставить</h2>
+      <button class="locker on" data-loc="0">
+        <div class="n">Зал А, локеры 12–40</div>
+        <div class="d">Рядом с входом. Сдача до 17:12, отель к 21:30.</div>
+      </button>
+      <button class="locker" data-loc="1">
+        <div class="n">Зал В, у выхода на платформы</div>
+        <div class="d">По пути к поезду. Сдача до 17:27, отель к 22:10.</div>
+      </button>
+      <div class="row" style="margin-top:14px;border-top:1px solid var(--rule);padding-top:11px">
+        <span class="k">Два места до 30 кг</span><span class="fill"></span><span class="v">1 490 ₽</span>
+      </div>
+    </div>
+
+    <div class="pad" style="margin-top:18px;display:none" id="bag-track">
+      <h2 id="bag-state">Багаж в пути</h2>
+      <p id="bag-desc">Принят в зале А в 17:12. Едет в багажном отсеке этого же поезда.</p>
+      <div class="progress"><i id="bag-bar" style="width:38%"></i></div>
+      <div class="row" style="margin-top:13px"><span class="k">Отель</span><span class="fill"></span><span class="v">Гельвеция, Марата 11</span></div>
+      <div class="row"><span class="k">Ожидается</span><span class="fill"></span><span class="v" id="bag-eta">21:30</span></div>
+    </div>
+
+    <button class="cta" id="bag-btn">Оставить багаж в локере А</button>
+    <button class="trouble" data-sheet>Что-то пошло не так</button>
+  </section>
+
+  <!-- вкладки -->
+  <nav class="tabs">
+    <button class="tab on" data-s="s-trip">Поездка</button>
+    <button class="tab" data-s="s-route">Маршрут</button>
+    <button class="tab" data-s="s-plat">Платформа</button>
+    <button class="tab" data-s="s-bag">Багаж</button>
+  </nav>
+
+  <!-- модалка помощи -->
+  <div class="scrim" id="scrim"></div>
+  <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-h">
+    <div id="sheet-body">
+      <h2 id="sheet-h">Что случилось?</h2>
+      <p>Нажмите — и к вам подойдёт сотрудник вокзала. Маршрут пересоберётся сам.</p>
+      <button class="cta" style="margin:18px 0 0;width:100%" id="help-btn">Позвать сотрудника</button>
+      <button class="trouble" id="close-sheet" style="margin-top:14px">Закрыть</button>
+    </div>
+  </div>
+
+</div>
+
+<div class="caption">прототип · открывается офлайн · версия «билет»</div>
+
+<script>
+/* ================= данные ================= */
+
+const рейс = {
+  номер:'704', платформа:3, путь:7,
+  отправление:'17:39', прибытие:'19:54', вПути:'2 ч 15 мин',
+  вагонов:10, мойВагон:7
+};
+
+const пассажир = { имя:'Дмитрий', вагон:7, место:12 };
+
+// Тайминг разложен по участкам, а не задан одним числом: на защите
+// спросят «откуда 23», и ответ должен сходиться по шагам маршрута.
+const тайминг = {
+  вход:      { налегке:2, коляска:3 },  // рамки: широкий проход дальше от входа
+  платформа: { налегке:2, коляска:8 },  // эскалатор против двух лифтов
+  посадка:   { налегке:1, коляска:3 },  // откидной пандус ставят дольше
+  ребёнок:2,           // с ребёнком идём медленнее
+  багаж:4,             // тащим чемоданы
+  встреча:3,           // ждём сотрудника у входа
+  запас:6              // стоим у двери до отправления
+};
+
+const локеры = [
+  { имя:'Зал А, локеры 12–40', сдача:'17:12', отель:'21:30' },
+  { имя:'Зал В, у выхода на платформы', сдача:'17:27', отель:'22:10' }
+];
+
+const состояние = {
+  child:false, stroller:false, bags:false, help:false,
+  локер:0, багаж:0   // 0 — оформить, 1 — в пути, 2 — доставлен
+};
+
+/* ================= утилиты ================= */
+
+// «17:39» -> минуты от полуночи и обратно
+const вМинуты = s => { const [ч,м]=s.split(':').map(Number); return ч*60+м };
+const вЧасы = m => String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');
+
+/* Пересчёт числа с перекатыванием — главная демонстрация продукта.
+   Идёт от старого значения к новому короткими шагами, чтобы на защите
+   было видно: приложение считает, а не подставляет заготовку. */
+const покойДвижения = matchMedia('(prefers-reduced-motion: reduce)');
+
+function перекатить(эл, было, стало){
+  if (было === стало || покойДвижения.matches){ эл.textContent = стало; return }
+  const старт = performance.now(), длит = 420;
+  function кадр(t){
+    const p = Math.min(1,(t-старт)/длит);
+    const плавно = 1-Math.pow(1-p,3);
+    эл.textContent = Math.round(было+(стало-было)*плавно);
+    if (p<1) requestAnimationFrame(кадр); else эл.textContent = стало;
+  }
+  requestAnimationFrame(кадр);
+}
+
+/* ================= расчёт ================= */
+
+// участки пути по вокзалу; их сумма и есть «минут по вокзалу»
+function участки(){
+  const т = состояние.stroller ? 'коляска' : 'налегке';
+  let платформа = тайминг.платформа[т];
+  if (состояние.child) платформа += тайминг.ребёнок;
+  if (состояние.bags)  платформа += тайминг.багаж;
+  return {
+    вход:     тайминг.вход[т],
+    встреча:  состояние.help ? тайминг.встреча : 0,
+    платформа,
+    посадка:  тайминг.посадка[т]
+  };
+}
+
+function пешком(){
+  const у = участки();
+  return у.вход + у.встреча + у.платформа + у.посадка;
+}
+
+/* Геометрия платформы. Метки на платформе нумеруются от головы поезда
+   по дверям: у вагона i левая дверь — метка 2i−1, правая — 2i.
+   Числа в CSS и здесь должны совпадать, иначе метка «вы» разъедется
+   с дверью вагона. */
+const ГЕОМ = { голова:37, шаг:61, ширина:58, дверьЛ:15.5, дверьП:42.5 };
+
+function левыйКрай(вагон){ return ГЕОМ.голова + (вагон-1)*ГЕОМ.шаг }
+
+function xМетки(м){
+  const вагон = Math.ceil(м/2);
+  return левыйКрай(вагон) + (м % 2 ? ГЕОМ.дверьЛ : ГЕОМ.дверьП);
+}
+
+// с коляской нужна правая дверь вагона — широкая, с откидным пандусом
+function метка(){
+  const в = рейс.мойВагон;
+  return состояние.stroller ? в*2 : в*2 - 1;
+}
+
+function шаги(){
+  const к = состояние.stroller, отпр = вМинуты(рейс.отправление);
+  const у = участки();
+
+  // шаги выкладываются встык от времени входа; последний упирается
+  // в отправление минус запас, поэтому сумма всегда сходится с числом наверху
+  let t = отпр - пешком() - тайминг.запас;
+
+  const список = [];
+  const шаг = (имя, мин, нота, лифт) => { список.push({время:t, имя, мин, нота, лифт}); t += мин; };
+
+  шаг('Вход на вокзал', у.вход,
+      к ? 'Широкий проход слева от рамок, без ступеней.' : 'Любой вход, очереди сейчас нет.');
+
+  if (у.встреча) шаг('Вас встретит сотрудник', у.встреча,
+      'Ирина, в красном жилете. Найдёт вас у входа по номеру билета.');
+
+  шаг('Путь к платформе', у.платформа,
+      к ? 'Лифт в зал В, затем лифт на платформу 3. Пандус у выхода.'
+        : 'Эскалатор в центре зала, затем направо к платформе 3.', к);
+
+  шаг('Посадка', у.посадка,
+      к ? 'Дверь №2 вагона 7 — широкая, с откидным пандусом. Проводник открывает её первой.'
+        : 'Любая дверь вагона 7.');
+
+  список.push({ время:отпр, имя:'Отправление', мин:135,
+    нота:'В пути 2 ч 15 мин. Остановки: Тверь, Валдай, В. Новгород.' });
+  список.push({ время:вМинуты(рейс.прибытие), имя:'Санкт-Петербург', мин:null,
+    нота: к ? 'На Московском вокзале лифт на выход работает круглосуточно.' : 'Московский вокзал.' });
+
+  return список;
+}
+
+/* ================= отрисовка ================= */
+
+let прошлоеПешком = пешком();
+
+function отрисовать(){
+  const п = пешком(), к = состояние.stroller;
+  const отпр = вМинуты(рейс.отправление);
+  const выход = вЧасы(отпр - п - тайминг.запас);
+
+  // главное число на экране «Поездка»
+  перекатить(document.getElementById('walk'), прошлоеПешком, п);
+  прошлоеПешком = п;
+
+  // время выхода подставляется прямо в текст ниже — отдельных узлов
+  // под него не держим, иначе они теряются при перерисовке innerHTML
+  document.getElementById('walk-note').innerHTML = к
+    ? 'Только лифты и пандусы, ни одной ступени. Выходить из дома в <b class="mono">'+выход+'</b>.'
+    : 'Эскалаторы, самый короткий путь. Выходить из дома в <b class="mono">'+выход+'</b>.';
+
+  document.getElementById('route-lead').innerHTML = (к
+    ? 'Только через лифты и пандусы. '
+    : 'Через эскалаторы. ') + 'Быть у входа в <b class="mono">'+выход+'</b>.';
+
+  // шаги маршрута
+  document.getElementById('steps').innerHTML = шаги().map(ш => `
+    <div class="step${ш.лифт?' lift':''}">
+      <div class="time">${вЧасы(ш.время)}</div>
+      <div class="body">
+        <div class="name">${ш.имя}${ш.мин?`<span class="m">${ш.мин} мин</span>`:''}</div>
+        <div class="note">${ш.нота}</div>
+      </div>
+    </div>`).join('');
+
+  // платформа
+  document.getElementById('mark').textContent = метка();
+  document.getElementById('door-note').textContent = к
+    ? `Здесь встанет правая дверь вагона ${рейс.мойВагон} — широкая, с откидным пандусом. Проводник откроет её первой.`
+    : `Здесь остановится дверь вагона ${рейс.мойВагон}. Платформа ${рейс.платформа}, поезд подойдёт головой со стороны Москвы.`;
+  document.getElementById('warn-note').textContent = к
+    ? 'Это вдвое меньше обычного поезда. Проводник придержит дверь, пока вы не заведёте коляску.'
+    : 'Это вдвое меньше обычного поезда. Не отходите от метки.';
+
+  const стоянка = к
+    ? [['0:00','Двери открываются'],
+       ['0:10','Проводник ставит пандус'],
+       ['0:40','Заходите вы — первыми'],
+       ['2:00','Двери закрываются']]
+    : [['0:00','Двери открываются'],
+       ['0:00','Выходят прибывшие'],
+       ['0:40','Заходите вы'],
+       ['1:50','Двери закрываются']];
+
+  document.getElementById('stop-plan').innerHTML = стоянка.map(([т,и]) => `
+    <div class="row"><span class="k">${и}</span><span class="fill"></span>
+    <span class="v">${т}</span></div>`).join('');
+
+  разместитьМетку();
+}
+
+/* поезд: вагоны уезжают за оба края экрана, свой вагон подвинут в кадр */
+function нарисоватьПоезд(){
+  const t = document.getElementById('train');
+  let html = '<div class="car head" aria-hidden="true"></div>';
+  for (let i=1;i<=рейс.вагонов;i++){
+    html += `<div class="car${i===рейс.мойВагон?' me':''}">${i}</div>`;
+  }
+  t.innerHTML = html;
+
+  const r = document.getElementById('ruler');
+  let rh = '';
+  for (let м=1; м<=рейс.вагонов*2; м++){
+    const x = xМетки(м);
+    rh += `<i style="left:${x}px"></i><b style="left:${x}px">${м}</b>`;
+  }
+  rh += '<div class="you" id="you"><div class="pin"></div><div class="lab">вы</div></div>';
+  r.innerHTML = rh;
+
+  // сдвигаем всю платформу так, чтобы свой вагон встал в середину экрана
+  const центр = левыйКрай(рейс.мойВагон) + ГЕОМ.ширина/2;
+  document.getElementById('rail').style.transform = `translateX(${195 - центр}px)`;
+}
+
+function разместитьМетку(){
+  const you = document.getElementById('you');
+  if (!you) return;
+  const м = метка();
+  you.style.left = xМетки(м) + 'px';
+  document.querySelectorAll('#ruler b').forEach((b,i) => b.classList.toggle('on', i+1 === м));
+}
+
+/* ================= события ================= */
+
+document.getElementById('chips').addEventListener('click', e => {
+  const b = e.target.closest('.chip'); if (!b) return;
+  const k = b.dataset.k;
+  состояние[k] = !состояние[k];
+  b.classList.toggle('on', состояние[k]);
+  b.setAttribute('aria-pressed', состояние[k]);
+  отрисовать();
+});
+
+document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
+  document.querySelectorAll('.tab').forEach(x => x.classList.remove('on'));
+  document.querySelectorAll('.screen').forEach(x => x.classList.remove('on'));
+  t.classList.add('on');
+  document.getElementById(t.dataset.s).classList.add('on');
+}));
+
+// локеры
+document.querySelectorAll('.locker').forEach(l => l.addEventListener('click', () => {
+  document.querySelectorAll('.locker').forEach(x => x.classList.remove('on'));
+  l.classList.add('on');
+  состояние.локер = +l.dataset.loc;
+  document.getElementById('bag-btn').textContent =
+    'Оставить багаж в ' + (состояние.локер === 0 ? 'локере А' : 'локере В');
+}));
+
+// три состояния багажа
+document.getElementById('bag-btn').addEventListener('click', () => {
+  состояние.багаж = (состояние.багаж + 1) % 3;
+  const л = локеры[состояние.локер];
+  const выбор = document.getElementById('bag-choose');
+  const трек  = document.getElementById('bag-track');
+  const кн    = document.getElementById('bag-btn');
+
+  if (состояние.багаж === 0){
+    выбор.style.display=''; трек.style.display='none';
+    кн.textContent = 'Оставить багаж в ' + (состояние.локер===0?'локере А':'локере В');
+  } else {
+    выбор.style.display='none'; трек.style.display='';
+    document.getElementById('bag-eta').textContent = л.отель;
+    if (состояние.багаж === 1){
+      document.getElementById('bag-state').textContent = 'Багаж в пути';
+      document.getElementById('bag-desc').textContent =
+        'Принят в «'+л.имя+'» в '+л.сдача+'. Едет в багажном отсеке этого же поезда.';
+      document.getElementById('bag-bar').style.width = '38%';
+      кн.textContent = 'Показать доставку';
+    } else {
+      document.getElementById('bag-state').textContent = 'Багаж доставлен';
+      document.getElementById('bag-desc').textContent =
+        'Два места приняты на стойке отеля в '+л.отель+'. Ключ от номера у портье.';
+      document.getElementById('bag-bar').style.width = '100%';
+      кн.textContent = 'Оформить ещё раз';
+    }
+  }
+});
+
+// шторка помощи
+const scrim = document.getElementById('scrim'), sheet = document.getElementById('sheet');
+let ктоОткрыл = null;
+
+function открыть(б){
+  ктоОткрыл = б;
+  scrim.classList.add('on'); sheet.classList.add('on');
+  document.getElementById('help-btn').focus();
+}
+function закрыть(){
+  scrim.classList.remove('on'); sheet.classList.remove('on');
+  if (ктоОткрыл) ктоОткрыл.focus();
+}
+
+document.querySelectorAll('[data-sheet]').forEach(b => b.addEventListener('click', () => открыть(b)));
+scrim.addEventListener('click', закрыть);
+document.getElementById('close-sheet').addEventListener('click', закрыть);
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && sheet.classList.contains('on')) закрыть() });
+
+document.getElementById('help-btn').addEventListener('click', () => {
+  состояние.help = true;
+  const чип = document.querySelector('.chip[data-k="help"]');
+  чип.classList.add('on'); чип.setAttribute('aria-pressed','true');
+  отрисовать();
+  document.getElementById('sheet-body').innerHTML = `
+    <h2>Ирина уже идёт</h2>
+    <p>Сотрудник вокзала подойдёт к входу через <b class="mono">${тайминг.встреча} минуты</b>.
+       Она в красном жилете и знает номер вашего билета.</p>
+    <p style="margin-top:9px">Маршрут пересобран: в нём появился шаг «Вас встретит сотрудник»,
+       и на вокзал заложено на ${тайминг.встреча} минуты больше.</p>
+    <button class="cta" style="margin:18px 0 0;width:100%" onclick="document.getElementById('scrim').click()">Понятно</button>`;
+});
+
+/* ================= штрих-код и часы ================= */
+
+// нерегулярные штрихи — печатный код, а не декоративный паттерн
+(function(){
+  const bc = document.getElementById('barcode');
+  let seed = 4213;
+  for (let i=0;i<38;i++){
+    seed = (seed*1103515245 + 12345) & 0x7fffffff;
+    const b = document.createElement('i');
+    b.style.width  = (1 + (seed>>16)%3) + 'px';
+    b.style.height = (26 + (seed>>8)%12) + 'px';
+    bc.appendChild(b);
+  }
+})();
+
+/* Обратный отсчёт. «Сейчас» — одна точка отсчёта на весь прототип:
+   и часы в статус-баре, и счётчик, и время подачи поезда считаются от неё,
+   иначе на защите заметят, что 17:24 плюс 1 ч 41 мин не даёт 17:39. */
+const сейчас = вМинуты(рейс.отправление) - 101;   // 15:58
+document.getElementById('clock').textContent = вЧасы(сейчас);
+
+let осталось = 101*60 + 9;
+function тик(){
+  осталось--;
+  const ч = Math.floor(осталось/3600), м = Math.floor(осталось%3600/60), с = осталось%60;
+  document.getElementById('cd').textContent =
+    String(ч).padStart(2,'0')+':'+String(м).padStart(2,'0')+':'+String(с).padStart(2,'0');
+  document.getElementById('h-left').textContent = ч+' ч '+м+' мин';
+  const п = осталось - 8*60;   // поезд подаётся за 8 минут до отправления
+  document.getElementById('arrive').textContent =
+    Math.floor(п/3600)+':'+String(Math.floor(п%3600/60)).padStart(2,'0')+':'+String(п%60).padStart(2,'0');
+}
+
+нарисоватьПоезд();
+отрисовать();
+тик();
+setInterval(тик, 1000);
+</script>
+</body>
+</html>
