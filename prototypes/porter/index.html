@@ -641,6 +641,11 @@ button{ background:none; border:0; cursor:pointer; text-align:left; }
    после встречи, а встреча возможна только по билету. */
 .row__n{ font-size:15px; font-weight:800; color:var(--ink-2); font-variant-numeric:tabular-nums; }
 .row__chev{ flex:none; color:var(--ink-2); display:grid; place-items:center; }
+/* Портрет носильщика вместо иконки: рисунок написан во всю плашку, поэтому
+   круг режет его по краю, а не оставляет поля. */
+.row__face{ border-radius:var(--r-pill); overflow:hidden; }
+.row__face svg{ width:100%; height:100%; display:block; }
+.row__rate{ display:flex; align-items:center; gap:4px; }
 
 .check{
   width:22px; height:22px; flex:none;
@@ -1173,9 +1178,9 @@ const PORTERS = [
 ];
 
 const HISTORY = [
-  { date:'12 августа', station:'Ярославский вокзал',   zone:'Зал прибытия',    sum:650, stars:5 },
-  { date:'27 июля',    station:'Ленинградский вокзал', zone:'Платформа',       sum:450, stars:5 },
-  { date:'3 июля',     station:'Курский вокзал',       zone:'Камера хранения', sum:350, stars:4 }
+  { date:'12 августа', station:'Ярославский вокзал',   zone:'Зал прибытия',    sum:650, stars:5, porter:0 },
+  { date:'27 июля',    station:'Ленинградский вокзал', zone:'Платформа',       sum:450, stars:5, porter:2 },
+  { date:'3 июля',     station:'Курский вокзал',       zone:'Камера хранения', sum:350, stars:4, porter:0 }
 ];
 
 const PHRASES = [
@@ -1204,6 +1209,12 @@ function icon(key, size, w){
   return '<svg width="' + (size || 20) + '" height="' + (size || 20) + '" viewBox="0 0 24 24" ' +
     'fill="none" stroke="currentColor" stroke-width="' + (w || 1.7) + '" ' +
     'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ICONS[key] + '</svg>';
+}
+
+function starSVG(size){
+  return '<svg width="' + (size || 17) + '" height="' + (size || 17) + '" viewBox="0 0 24 24" ' +
+    'fill="currentColor" aria-hidden="true">' +
+    '<path d="m12 3.6 2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.6 9.7l5.8-.8L12 3.6Z"/></svg>';
 }
 
 /* Портрет носильщика. Рисованный, а не фотография: настоящие снимки появятся,
@@ -2248,8 +2259,7 @@ function sheetHistory(){
    Повтор остался, но отдельной подписанной кнопкой внизу. */
 function sheetPastOrder(arg){
   const h = HISTORY[+arg || 0];
-  const star = '<svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">' +
-    '<path d="m12 3.6 2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.6 9.7l5.8-.8L12 3.6Z"/></svg>';
+  const star = starSVG(17);
 
   const line = (label, value, extra) =>
     '<span class="row">' +
@@ -2273,9 +2283,33 @@ function sheetPastOrder(arg){
   foot(mainBtn('repeat', 'Повторить заказ'));
 }
 
+/* Носильщики пассажира: по одной строке на человека, а не на заказ. Тап ведёт
+   в последний заказ с ним — так строка обещает ровно то, что открывает. */
+function myPorters(){
+  const seen = {};
+  HISTORY.forEach((h, i) => {
+    const p = seen[h.porter];
+    if(p) p.cnt++;
+    else seen[h.porter] = { p:PORTERS[h.porter], i:i, cnt:1 };
+  });
+  return Object.keys(seen).map(k => seen[k]);
+}
+
 function sheetMe(){
   const n = HISTORY.length;
-  const avg = (HISTORY.reduce((a, h) => a + h.stars, 0) / n).toFixed(1).replace('.', ',');
+  const spent = HISTORY.reduce((a, h) => a + h.sum, 0);
+
+  const porterRow = (r) =>
+    '<button class="row" type="button" data-act="past" data-i="' + r.i + '">' +
+      '<span class="row__ic row__face">' + faceSVG(r.p) + '</span>' +
+      '<span class="row__body">' +
+        '<span class="row__value">' + r.p.name + '</span>' +
+        '<span class="row__label">Жилет ' + r.p.vest + ' · ' + r.cnt + ' ' +
+          plural(r.cnt, 'заказ', 'заказа', 'заказов') + '</span>' +
+      '</span>' +
+      '<span class="row__extra row__rate">' + starSVG(14) + r.p.rating + '</span>' +
+      '<span class="row__chev">' + icon('chev', 18, 2) + '</span>' +
+    '</button>';
 
   body(
     '<div class="me">' +
@@ -2284,20 +2318,21 @@ function sheetMe(){
     '</div>' +
     '<div class="tiles">' +
       '<div class="stat"><b class="nums">' + n + '</b><span>' + plural(n, 'заказ', 'заказа', 'заказов') + '</span></div>' +
-      '<div class="stat"><b class="nums">' + avg + '</b><span>средняя оценка</span></div>' +
+      '<div class="stat"><b class="nums">' + money(spent) + '</b><span>за всё время</span></div>' +
     '</div>' +
-    '<div class="group">Вид</div>' +
-    '<div class="list">' +
-      '<button class="li" type="button" data-act="theme">Тёмная тема' +
-        '<span class="sw' + (isDark() ? ' on' : '') + '" aria-hidden="true"><i></i></span>' +
-      '</button>' +
-    '</div>' +
+
+    '<div class="group">Ваши носильщики</div>' +
+    '<div class="rows">' + myPorters().map(porterRow).join('') + '</div>' +
+
     '<div class="group">Настройки</div>' +
     '<div class="list">' +
       '<button class="li" type="button" data-act="go" data-to="history">История заказов<span class="meta">' + n + '</span></button>' +
       '<button class="li" type="button" data-act="pay">Способ оплаты<span class="meta nums">•••• 4417</span></button>' +
-      '<button class="li" type="button" data-act="stations">Мои вокзалы<span class="meta">' + STATIONS.length + '</span></button>' +
+      '<button class="li" type="button" data-act="stations">Вокзал<span class="meta">' + stationOf().short + '</span></button>' +
       '<button class="li" type="button" data-act="support">Поддержка<span class="meta">Круглосуточно</span></button>' +
+      '<button class="li" type="button" data-act="theme">Тёмная тема' +
+        '<span class="sw' + (isDark() ? ' on' : '') + '" aria-hidden="true"><i></i></span>' +
+      '</button>' +
     '</div>'
   );
 }
