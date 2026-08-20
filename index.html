@@ -1703,11 +1703,11 @@ const state = {
 };
 
 /* Демо-режим: на защите нельзя ждать реальные минуты. */
-const DEMO = { search:2500, meet:12, carry:12, scan:2000 };
+const DEMO = { search:2500, meet:12, carry:12, scan:2000, handover:6000 };
 
 const $ = (id) => document.getElementById(id);
 
-let tickTimer = null, searchTimer = null, scanTimer = null, phraseTimer = null;
+let tickTimer = null, searchTimer = null, scanTimer = null, phraseTimer = null, handTimer = null;
 
 function replay(el, cls){
   if(!el) return;
@@ -1994,7 +1994,7 @@ function renderActive(){
   const subs = {
     searching: 'Смотрим свободных на ' + stationOf().short.toLowerCase(),
     assigned:  meetPlace(),
-    arrived:   'Назовите код — и передайте багаж',
+    arrived:   'Назовите код — носильщик отметит приём',
     picked:    'Несёт до ' + destGen(),
     delivered: 'Пересчитайте багаж: ' + places(),
     rating:    p ? 'Жилет №' + p.vest : ''
@@ -2721,7 +2721,7 @@ function stageLine(){
   const zn = zoneOf();
   if(state.stage === 'assigned')
     return { t:'Идёт к вам', s:'Встретит ' + whenText() + ' · ' + meetPlace() };
-  if(state.stage === 'arrived')   return { t:'Ждёт на месте', s:'Назовите код — и передайте багаж' };
+  if(state.stage === 'arrived')   return { t:'Ждёт на месте', s:'Назовите код — носильщик отметит приём' };
   if(state.stage === 'picked')    return { t:'Несёт багаж',   s:'Принял ' + places() + ' · до ' + destGen() };
   if(state.stage === 'delivered') return { t:'Передал багаж', s:'Пересчитайте багаж: ' + places() };
   return { t:'Багаж доставлен', s:'Оцените работу' };
@@ -2780,12 +2780,12 @@ function sheetOrder(){
 
   const cta =
     state.stage === 'assigned'  ? '<button class="btn btn--ghost" type="button" data-act="cancel">Отменить заказ</button>' :
-    state.stage === 'arrived'   ? mainBtn('handover', 'Передать багаж по коду') :
-    state.stage === 'picked'    ? '<button class="btn btn--ghost" type="button" disabled>Багаж несут · ' + places() + '</button>' :
+    state.stage === 'arrived'   ? '<button class="btn btn--ghost" type="button" disabled>Назовите код носильщику</button>' :
+    state.stage === 'picked'    ? '' :
     state.stage === 'delivered' ? mainBtn('finish', 'Получил багаж') : '';
 
   /* Демо: пропустить ожидание, чтобы показ не упирался в таймеры */
-  const skip = (state.stage === 'assigned' || state.stage === 'picked')
+  const skip = (state.stage === 'assigned' || state.stage === 'arrived' || state.stage === 'picked')
     ? '<button class="btn btn--skip" type="button" data-act="skip">Пропустить ожидание</button>'
     : '';
 
@@ -2903,20 +2903,29 @@ function arrive(){
   clearInterval(tickTimer);
   state.stage = 'arrived';
   state.left = 0;
-  say('Носильщик на месте — передайте багаж по коду');
+  say('Носильщик на месте — назовите код');
   buzz('meet');                    /* главная новость всего заказа */
   renderActive();
   if(isOpen('order')) paintPage();
+
+  /* Код называет пассажир, а сверяет и отмечает приём носильщик у себя
+     в приложении. Пассажиру жать нечего — ждём отметку. */
+  clearTimeout(handTimer);
+  handTimer = setTimeout(handOver, DEMO.handover);
 }
 
 function handOver(){
+  clearTimeout(handTimer);
   state.stage = 'picked';
   state.left = DEMO.carry;
   /* Уезжающему зона — это место, где он багаж отдал. Несут его к вагону. */
   say('Багаж принят, носильщик несёт до ' + destGen());
   buzz('ok');
   renderActive();
-  if(isOpen('order')) paintPage();
+
+  /* Дальше носильщик идёт рядом с пассажиром: смотреть на экран незачем,
+     руки заняты. Заказ сворачивается в полоску на главной. */
+  if(isOpen('order')) goHome();
   startTick();
 }
 
@@ -2961,6 +2970,7 @@ function submitRating(){
 
 function cancelOrder(){
   clearInterval(tickTimer);
+  clearTimeout(handTimer);
   clearTimeout(searchTimer);
   say('Заказ отменён');
   resetOrder();
@@ -3384,13 +3394,14 @@ function onAct(e){
 
   /* --- жизненный цикл --- */
   if(act === 'cancel')   return cancelOrder();
-  if(act === 'handover') return handOver();
   if(act === 'finish')   return finishOrder();
 
   /* Демо: мгновенный переход на следующую стадию вместо ожидания таймера */
   if(act === 'skip'){
     clearInterval(tickTimer);
+    clearTimeout(handTimer);
     if(state.stage === 'assigned') return arrive();
+    if(state.stage === 'arrived')  return handOver();
     if(state.stage === 'picked')   return deliver();
     return;
   }
