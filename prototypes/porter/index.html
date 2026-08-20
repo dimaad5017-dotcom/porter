@@ -635,6 +635,25 @@ button{ background:none; border:0; cursor:pointer; text-align:left; }
 }
 .scan:active{ transform:scale(.99); }
 
+/* Экран сканера ставим по центру: наверху он оставлял под собой пустой
+   экран, а камера в любом приложении смотрит из середины. */
+.mid{
+  flex:1; min-height:calc(100dvh - 96px);
+  display:flex; flex-direction:column; justify-content:center; gap:14px;
+}
+
+/* Что именно читаем из билета — три подписи вместо перечисления в строку:
+   список глазом не читается, а три слова видно сразу. */
+.reads{ display:flex; flex-direction:column; gap:6px; align-items:center; }
+.reads__t{ font-size:12px; color:var(--ink-2); }
+.reads__l{ display:flex; flex-wrap:wrap; justify-content:center; gap:6px; }
+.reads__l b{
+  font-size:12px; font-weight:600; letter-spacing:-.01em;
+  padding:6px 12px; border-radius:var(--r-pill);
+  background:var(--surface); color:var(--ink);
+  box-shadow:var(--shadow-card);
+}
+
 /* --- поле ручного ввода --- */
 .field{
   display:flex; align-items:center; gap:10px;
@@ -1717,13 +1736,21 @@ const DEMO_TICKET = '74120093814021';   /* 14 цифр, для показа */
 
 function sheetTicket(){
   body(
-    '<p class="lead">Наведите камеру на билет — возьмём вокзал, поезд, вагон, платформу и время прибытия.</p>' +
-    '<button class="scan" type="button" data-act="scan" aria-label="Распознать билет">' +
-      '<span class="scan__frame"><i></i><i></i><i></i><i></i></span>' +
-      '<span class="scan__line"></span>' +
-      '<span class="scan__hint">Билет в рамке</span>' +
-    '</button>' +
-    '<button class="linkbtn" type="button" data-act="manual">Ввести номер вручную</button>'
+    '<div class="mid">' +
+      '<p class="lead">Наведите камеру на билет.</p>' +
+      '<button class="scan" type="button" data-act="scan" aria-label="Распознать билет">' +
+        '<span class="scan__frame"><i></i><i></i><i></i><i></i></span>' +
+        '<span class="scan__line"></span>' +
+        '<span class="scan__hint">Билет в рамке</span>' +
+      '</button>' +
+      '<div class="reads">' +
+        '<span class="reads__t">Возьмём из билета</span>' +
+        '<span class="reads__l">' +
+          '<b>Вокзал</b><b>Поезд и вагон</b><b>Время прибытия</b>' +
+        '</span>' +
+      '</div>' +
+      '<button class="linkbtn" type="button" data-act="manual">Ввести номер вручную</button>' +
+    '</div>'
   );
 
   /* Демо-режим: ждать сканер не обязательно — тап по рамке распознаёт сразу */
