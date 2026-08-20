@@ -1617,7 +1617,7 @@ const PORTERS = [
    Цифры сходятся с calc(): цена первой вещи по её размеру, 50 ₽ за каждую
    следующую, с четвёртой — ещё 200 ₽ за вторую пару рук. */
 const HISTORY = [
-  { date:'12 августа', st:'yar', time:'09:40', zone:'Зал прибытия',       size:'case', bags:2, tip:100, sum:400,  stars:5 },
+  { date:'12 августа', st:'yar', time:'09:40', zone:'Главный вход',        size:'case', bags:2, tip:100, sum:400,  stars:5, dir:'out', car:7, platform:2 },
   { date:'4 августа',  st:'kur', time:'18:05', zone:'Зал ожидания',       size:'case', bags:1, tip:0,   sum:250,  stars:5 },
   { date:'27 июля',    st:'len', time:'07:15', zone:'Главный вход',       size:'hand', bags:1, tip:100, sum:300,  stars:5, dir:'out', car:9, platform:1 },
   { date:'19 июля',    st:'yar', time:'13:50', zone:'Камера хранения',    size:'big',  bags:1, tip:100, sum:450, stars:4 },
@@ -2220,7 +2220,7 @@ function sheetTicket(){
 
   /* Демо-режим: ждать сканер не обязательно — тап по рамке распознаёт сразу */
   clearTimeout(scanTimer);
-  scanTimer = setTimeout(() => { if(isOpen('ticket')) applyTicket(DEMO_TICKET); }, DEMO.scan);
+  scanTimer = setTimeout(() => { if(isOpen('ticket')) applyTicket(DEMO_TICKET_OUT); }, DEMO.scan);
 }
 
 function sheetManual(){
@@ -2228,13 +2228,13 @@ function sheetManual(){
     '<p class="lead">Номер электронного билета — 14 цифр, он есть в письме и в приложении перевозчика.</p>' +
     '<div class="field">' +
       '<input id="tk" type="text" inputmode="numeric" maxlength="17" ' +
-        'placeholder="7412 0093 8140 21" aria-label="Номер билета">' +
+        'placeholder="7412 0093 8140 51" aria-label="Номер билета">' +
     '</div>' +
     '<div class="tags">' +
       '<button class="tag" type="button" data-act="demo-ticket" ' +
-        'data-t="' + DEMO_TICKET + '">Пример: еду с поезда</button>' +
-      '<button class="tag" type="button" data-act="demo-ticket" ' +
         'data-t="' + DEMO_TICKET_OUT + '">Пример: еду на поезд</button>' +
+      '<button class="tag" type="button" data-act="demo-ticket" ' +
+        'data-t="' + DEMO_TICKET + '">Пример: еду с поезда</button>' +
     '</div>'
   );
   foot(mainBtn('read-manual', 'Найти рейс', '', true));
@@ -3325,12 +3325,12 @@ function onAct(e){
   const act = el.dataset.act;
 
   /* --- шаг 1: билет --- */
-  if(act === 'scan')   return applyTicket(DEMO_TICKET);
+  if(act === 'scan')   return applyTicket(DEMO_TICKET_OUT);
   if(act === 'manual') { clearTimeout(scanTimer); return pushPage('manual'); }
 
   if(act === 'demo-ticket'){
     const f = $('tk');
-    f.value = (el.dataset.t || DEMO_TICKET).replace(/(\d{4})(?=\d)/g, '$1 ');
+    f.value = (el.dataset.t || DEMO_TICKET_OUT).replace(/(\d{4})(?=\d)/g, '$1 ');
     checkManual();
     return;
   }
