@@ -198,14 +198,14 @@ button{ background:none; border:0; cursor:pointer; text-align:left; }
    имя продукта на своём же экране пассажиру ничего не сообщает. */
 .head{
   display:flex; align-items:center; gap:12px;
-  padding:calc(14px + env(safe-area-inset-top)) 2px 14px;
+  padding:calc(16px + env(safe-area-inset-top)) 2px 16px;
 }
 .head__hi{
-  font-size:26px; font-weight:800; letter-spacing:-.035em;
+  font-size:30px; font-weight:800; letter-spacing:-.035em;
 }
 
 .ava{
-  width:40px; height:40px; flex:none; margin-left:auto;
+  width:44px; height:44px; flex:none; margin-left:auto;
   border-radius:var(--r-pill);
   background:var(--invert); color:var(--invert-ink);
   display:grid; place-items:center;
@@ -226,7 +226,7 @@ button{ background:none; border:0; cursor:pointer; text-align:left; }
    ПЛИТКИ. Действие — широкое и жёлтое, разделы — два равных квадрата.
    Три плитки вместо списка: их видно целиком, без чтения строк.
    ------------------------------------------------------------------------- */
-.tiles3{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.tiles3{ display:grid; grid-template-columns:1fr 1fr; gap:12px 8px; }
 
 .tile{
   position:relative;
@@ -272,14 +272,14 @@ button{ background:none; border:0; cursor:pointer; text-align:left; }
   background:var(--yellow-lit); color:var(--yellow-ink);
   box-shadow:0 1px 2px rgba(33,32,31,.06), 0 8px 18px -8px var(--yellow-cast),
              0 24px 40px -22px var(--yellow-cast);
-  padding:18px 8px 18px 20px;
+  padding:22px 8px 22px 22px;
   flex-direction:row; align-items:center; gap:14px;
 }
-.tile__txt{ min-width:0; display:flex; flex-direction:column; gap:3px; }
-.tile--go .tile__nm{ font-size:18px; font-weight:800; letter-spacing:-.03em; }
+.tile__txt{ min-width:0; display:flex; flex-direction:column; gap:4px; }
+.tile--go .tile__nm{ font-size:21px; font-weight:800; letter-spacing:-.032em; }
 /* «подача от 10 мин · от 350 ₽» отвечает на два главных вопроса сразу —
    бледнее основной подписи она быть может, полупрозрачной нет */
-.tile--go .tile__sub{ color:rgba(33,32,31,.76); font-weight:600; }
+.tile--go .tile__sub{ font-size:13.5px; color:rgba(33,32,31,.76); font-weight:600; }
 .tile__art{ flex:none; width:104px; color:var(--ink); }
 /* Свободное место справа от подписи делится поровну — тележка встаёт по
    центру между концом текста и краем плитки */
@@ -288,7 +288,7 @@ button{ background:none; border:0; cursor:pointer; text-align:left; }
 /* Тележка стоит вплотную к подписи и выходит за отступы плитки: объёмный
    предмет на плоской заливке читается как предмет, а не как иконка в рамке.
    Текст не растягивается на всю ширину — иначе рисунок уезжает к краю. */
-.tile__cart{ display:block; height:126px; width:auto; margin:-16px -2px -18px 0; }
+.tile__cart{ display:block; height:150px; width:auto; margin:-20px -2px -22px 0; }
 
 /* ----------------------------------------------------------------------------
    ВТОРОЙ ЭКРАН. Заказ, кабинет и история — полноценные экраны со своей шапкой,
