@@ -386,10 +386,11 @@ button{ background:none; border:0; cursor:pointer; text-align:left; }
    поэтому картинка не наклеена сверху, а лежит внутри карточки.
    ------------------------------------------------------------------------- */
 /* Лента, а не столбик: три вокзала — это ответ на вопрос «а где вы есть»,
-   он не должен занимать целый экран прокрутки. Карточка почти во всю
-   ширину, поэтому рисунок остаётся крупным. */
+   он не должен занимать целый экран прокрутки. Карточка заметно уже кнопки
+   заказа: карточка во всю ширину вырастала выше главного действия, и самым
+   крупным пятном экрана становился справочник, а не то, зачем сюда пришли. */
 .stations{
-  display:grid; grid-auto-flow:column; grid-auto-columns:86%;
+  display:grid; grid-auto-flow:column; grid-auto-columns:63%;
   gap:12px;
   overflow-x:auto; scroll-snap-type:x mandatory;
   margin:0 -16px; padding:2px 16px 6px;
@@ -409,23 +410,23 @@ button{ background:none; border:0; cursor:pointer; text-align:left; }
 .stile:active{ transform:scale(.985); }
 
 .stile__art{
-  display:block; width:100%; aspect-ratio:2/1;
+  display:block; width:100%; aspect-ratio:2.2/1;
   object-fit:contain; object-position:center bottom;
   background:var(--sand);
 }
-.stile__txt{ padding:12px 18px 18px; }
+.stile__txt{ padding:10px 14px 14px; }
 .stile__nm{
-  display:block; font-size:20px; font-weight:800; letter-spacing:-.03em;
+  display:block; font-size:17px; font-weight:800; letter-spacing:-.03em;
 }
-.stile__sub{ display:block; font-size:14px; color:var(--sand-ink); margin-top:4px; }
+.stile__sub{ display:block; font-size:13px; color:var(--sand-ink); margin-top:2px; }
 
 /* Текущий вокзал помечаем словом, а не галочкой: галочка ничего не объясняет.
    На песочном фоне отметка всегда тёмная — тема её не переворачивает. */
 .stile__here{
-  display:inline-block; margin-top:9px;
-  padding:5px 12px; border-radius:var(--r-pill);
+  display:inline-block; margin-top:7px;
+  padding:4px 10px; border-radius:var(--r-pill);
   background:var(--sand-fg); color:var(--sand);
-  font-size:12.5px; font-weight:600; letter-spacing:.01em;
+  font-size:11.5px; font-weight:600; letter-spacing:.01em;
 }
 .stile .check{ background:rgba(33,31,22,.12); }
 .stile .check.on{ background:var(--sand-fg); color:var(--sand); }
