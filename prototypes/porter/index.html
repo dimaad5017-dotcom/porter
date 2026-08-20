@@ -773,22 +773,25 @@ button{ background:none; border:0; cursor:pointer; text-align:left; }
 }
 
 /* --- степпер --- */
-.stepper{
-  display:flex; align-items:center; justify-content:space-between;
-  background:var(--surface); border-radius:var(--r-card); padding:10px 12px;
-  box-shadow:var(--shadow-card);
+/* Счётчик мест живёт в заголовке блока «Что несём»: отдельной карточки ради
+   одной цифры не нужно, а цифра без подписи ничего не значит — поэтому в нём
+   не «2», а «2 места». */
+.stepper__ctl{
+  display:flex; align-items:center; gap:2px; flex:none;
+  background:var(--surface); border-radius:var(--r-pill);
+  padding:2px; box-shadow:var(--shadow-card);
 }
-.stepper__txt b{ display:block; font-size:15px; font-weight:600; }
-.stepper__txt span{ display:block; font-size:12.5px; color:var(--ink-2); }
-.stepper__ctl{ display:flex; align-items:center; gap:4px; }
 .stepper__ctl button{
-  width:38px; height:38px; border-radius:var(--r-pill);
-  background:var(--surface-2); display:grid; place-items:center;
-  font-size:22px; font-weight:600; line-height:1;
+  width:28px; height:28px; border-radius:var(--r-pill);
+  color:var(--ink); display:grid; place-items:center;
+  font-size:19px; font-weight:600; line-height:1;
 }
-.stepper__ctl button:disabled{ opacity:.35; }
-.stepper__ctl button:active:not(:disabled){ transform:scale(.92); }
-.stepper__n{ min-width:34px; text-align:center; font-size:18px; font-weight:700; }
+.stepper__ctl button:disabled{ opacity:.3; }
+.stepper__ctl button:active:not(:disabled){ transform:scale(.9); }
+.stepper__n{
+  min-width:64px; text-align:center;
+  font-size:13px; font-weight:700; color:var(--ink); letter-spacing:-.01em;
+}
 
 /* --- поиск носильщика: маячок платформы --- */
 .beacon{ display:flex; align-items:center; gap:14px; }
@@ -815,10 +818,12 @@ button{ background:none; border:0; cursor:pointer; text-align:left; }
 /* Строка встречи: единственное, что пассажиру нужно знать до заказа —
    что носильщик придёт к нему сам, а не наоборот */
 .meet{
-  display:flex; align-items:center; gap:12px;
+  display:flex; align-items:center; gap:12px; width:100%; text-align:left;
   background:var(--surface); border-radius:var(--r-card);
   padding:14px 16px; box-shadow:var(--shadow-card);
 }
+.meet:active{ transform:scale(.99); }
+.meet__chev{ margin-left:auto; color:var(--ink-2); display:grid; place-items:center; }
 .meet__ic{
   width:40px; height:40px; flex:none; border-radius:12px;
   background:var(--surface-2); color:var(--ink);
@@ -1201,8 +1206,8 @@ const PHOTOS = {
   /* Зоны передачи багажа — объёмные иконки Fluent Emoji (Microsoft, MIT).
      Точку встречи пассажир выбирает взглядом, а не чтением. */
   zone: {
-    plat:  'data:image/webp;base64,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',
-    hall:  'data:image/webp;base64,UklGRjgLAABXRUJQVlA4WAoAAAAQAAAAjwAAjwAAQUxQSMgBAAABgJztf9rm57+yA0yCxzL6ammcwiLJFoUFMkJphaS9Bex/QY7hyf//1PIlIhwGYJs2UslWaYzSAQjjjMgIIEW1wRiIoTG1nBsB6E7ixDlnc5VHa531+s55Z2CdP82djc2f2o4z9c/P2fwZ5M/FO+kkHncBkKm+b2B0M19sWADXi/nNCKi4awOcPPhatvfkP24ejoEqTUJ/+nd26d957j1/L1q6YeZpH1QaHYxeON1mLIjZNuWXETql1fMv3rA4bvjrvKRIGH/xlgVyy1/jUiJFvY+/Uebw0YuoTG+WVyWKM5gS44G/LHXxsHggepaNZ6LC+XCdZnKRpatB0Yxw7+ty5bvics6pZKQ8L3r5RnfBv7XgkhddRLuV8Vo61mOY3YhZOjguQvI3yh6SIjj5sEWw6sD9e2AbF1z4QfDZkQ3PO2rdn4dt82oHn81c67WZbV7t8LNK+Cnar3b7vln4+VzTvCbtV9G82u3X71zhpwgwbX18Xhr54PTxCerjo9TMZwrCnXwfLunjU9bFx/1EpI/PXZ0cAH1yEtTJkdAlZ+MMRp0cEi1zWgADHEvMsakl52ctKuennhykcZzYPWZBDpI2OVHa5GgFcQJWUDggSgkAADA1AJ0BKpAAkAA+ORiKQyIhoRa5bvggA4SyNtvHa/48CX/oUDw+6B+QHZ+yn7Z/efkz0nXO3gTnum3ekzyz/xvuS+bf6q+3f7jvcI/WXpq/t36hf2z9WP0YegB+3nWn/sB7AH8A/03pe/uD8JP7W/t37RP//6wCvgMra+UnEH9I/znGtwIHh2zGP61/xftA+UL+S/Kr2x/RH+5/Kr6CP47/NP8n+V398///0q+bN7AH6hjusO4auErx1uCVSs/yYvAO7JAnpsx+DJC13H+VT3AHPN9TfO/5Y5LrY8D051ToM3G8Sw8urRe2T1VJI/WNQ4gicnXagqZv9vjyxSFkz1oSV0Ai2gMLYVFr32h81/6eTLzbYSXjpB0aQLpjD+tjJVJpgAYCd50+UyNiad9qZB9Wiy7uFKtaZ7RmFtm5dJQA3c+hp41QuQL5eg19oUfKc7/Md/YlSZ1ksbvh3PB/dGvzA51PyhZPCfwTiJwk3+o3ModiAO4sAZDr+jRm969MZrHN8bSU+KtidZcRLfA2xP49cPKvUXA5Yq+p51i5B11fO3Iy5XCd0y7Ot2/D41TyPkAAAP7/2H4kbFFbwS6BEHvuBFjqzKzHluh6pqycgTOf/cZdWhcRPe8U7AtbYy0q/zJMOl183NWQc0Nw0Wqw/TwnuGzNiGJqJ2y96Uyff8vD/UDXk+ozFaZr5ON5X45XEicoqk3qmyjBQ+FhCu0uUxjuNxzpxONVMK/VrCpVi1vmC25LSbuG2dw7Ln0ks0r96zGcgrfpBQfnaxfyxsE+zFUppTpsYp+8tvxfSG/Xu9joPjgCPwQJXFPz77B+wuv4wJTd458Y4C/9Iu/8PH/AMLC14doFFfrTROq+GxvKMi9sL5OIej0jJNzkcCx8CzIB1IacV/5IUjsxrOz7etCBs4Ib1M8oHTMVVlcuLzd7Mf1gD71mNtpJswJQ7/TcYgwMIhwCWWp+ddh+dOEy+NsSL+dhZG52RgBa9gkroF8fbzc26/ofrAWyuKT7iULZVsw54nP7u43QdjYppHv+A6h1vofgyTKQrytejmzBm75UdShy3H97lZ2IYvZkew67uDkrDyB6ptgLx13S0gikAyTg4M6qiFsCM7gttS2jh805GbMQ8HVMNLcTfYGKRDn/Z8DMXfjW5f9oHgOVyZ+T+Ht+zbxHxCScA0X/ti4qPr4pb0IOgJJaqW4WpVk4hBGdxaUFLXRk0H73auW05vwzHfVAzH+9QutlMoSvCUrIPmEi8vqP7ajo13zfcTVbavIYN2ssmjacTc9yPH1wM9UDTIV7TcL+EmrZeUjCkXYeO7hNkNNqYMKs1mrcxrV4CQLm62vXOs+nscCO/9uuIHYUHKm5T0qWuawPZLDlyJ7aHJ1oFvHzMUGng9z9KUuHJ54pfeytaEEzyX8qIjQtdg9iXyUW/63fw3qaZ5HJDdk2bC5qfiLFJWDzP5tIyh0fUi14+sCkzVtur6FT7DXORe9nafHTvDZnqPQrj3xOu46rSrPN02tDFD//1Jt5pbGWcgxmaPwv+FAnmJnj4x2SJKfhjb0u4t9LjdRubJ9ezdt5wDW7KrFdawSrzxxRZ1T6U3XvMzPfN/7JyDfcMbAznN+pr9h21OoSkbPmg5qS0vZOB7cPKEPxdCd8sTVrzMBv9A4YUv1EvHFLs7GDgkHEsSoGhmg6gZxuSnjyNg36ojs2sQl/KIOo+MIpovpSxT2Am2zUtmmwzOwbHw6zg8Cfazb+z5Q2oyMI/3+BGLEIjCa0btC4AHbrFDVtA2zNkMUHkc4jpkLoBjnXqllQwTghr58zdKKC9NRsxb3yK0+9QyAzYf+j8gdw0wB1Shvzb1i30bArzkrUgA1GwEiMoCbc0aKP7+DiOlAykWQFckWGsqXS4QNkObpSbLUe1qmHVUEMriUPn6pCPby3SW4Oi+6jhnhQzEsAX3JMvqRolTmNT0M/7yCa9QwUVfPgJx+5ti0PW6smr+yPPVm9vUHymc/RZASiuer2pn08CY5ySmKc6Y4vm5M9qNThCkJWlCz1T+h/NbNycCbTa85D0F6xW7TTYmuRV4zNImnx5n9ue1BUii1rUgn37eBVT4PAXQtqpxbi60n26iiawCUImr/K84EMhlypCDI34IOifg/IgdF5j1I4+ZiTFcyK5zD9rFKSmfwZauREyHomff86Gq1W3i4YZoFkuMxpFjjKcqaBoRinVAceN7xkL8QO4MSujI4obhYiKxhQdYcuCAJV332BB7yGZB2f6hR738cSzzWFlltY9aHx8+qk6L1Ssvu98Uem9HHSn0vkSSjHDoIzWkMMPh8AUzoPzsMiivDrFYa4SIKA2WkbJKOxmnup/LaTM7FMi/2+LlGbMg/DQKGmNRX4W3lDjOVjFQLIWoXytw5PKw82w75A9/p2V9NbQki9DeZmE8L/sY5ghxb+Q081EIn9d+CyC08FKUwoofHPwZ64fYZ7wkDMkg0XiYuP2iHg+Llqmp+F3GPNMbuAEBDwFFIN5IiIWGDLB8QmbF+mXkcLRk2Y4Hai/4AhtS/VvCpFFOMM/gR3OO8uE9J/ABekJfHw6eIBM5BlJ1kefL7SdMVboYR1/TF3kx+1TRao5unJz9BHXuYQYcy6jyioELLF5Zal/rngRHw2k8y0Ie04qmOuMTEvv+UqFeKYxLT77DuKqVOXTAqDq+jfFwu4uy0gSCloinYXbbVXMKmI3jo7edkwGa6hOsB0UHp9oEbruVsB3i2e0CUPYgP/7J83Rls9NQve5zwYhYEAIuNu4IzQo8fPhpDK4ZxpRrQTeP+WutZ5J1UYEeE7vHbREbQo6SgVadBF/z82jwtgldfC/7dImJLvQ0C3+yu3ly1vPxJVhfb93F6V2CJKzd/VjBrbJau/kQgjD2RgxpuqDFw4Y3VShH0NvhzjD6H9s/WHyTDMpmi8JZ85zViaGSF9fiJWXsHNiQhzGCKD9oZsOkykWYqkm75DWXi3TtDGI2Z2eHqnTLfXwgOaMFNYC1SrANCoIHoDJMJddNt06IJL23TMwwFt3/n43WvDwjRl1cnii65fwuw3eR6k1+Ob7B3LMFcfh6zB4tsm16HnAiKARK2sqczeeHWlb0CWVhPyc/NyjeLqVv6fmlCJMxY0l6LnvInME5RFW+Kxm3/hkkwDQiFHEV9nefZI/5ftWAAA',
+    taxi:  'data:image/webp;base64,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',
+    metro: 'data:image/webp;base64,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',
     store: 'data:image/webp;base64,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',
   },
   porter: {},
@@ -1215,22 +1220,24 @@ const TRIPS = [
   { train:'Экспресс 104', from:'Ярославль',       station:'yar', arrive:'14:10', car:12, seat:45, platform:5 }
 ];
 
-/* Все три точки — внутри вокзала. За порог носильщик не выходит: привокзальная
-   площадь и вестибюль метро — зона других служб, туда багаж вести нельзя.
-   Раз маршрут не выходит за здание, доплаты за зону нет: цена зависит
-   только от багажа, и это правило пассажир может пересказать. */
+/* Куда донести — это три конца пути, а не три места на схеме. Пассажир после
+   поезда пересаживается на такси, спускается в метро или сдаёт вещи и уходит
+   гулять по городу; четвёртого варианта у него нет. Платформа и зал прибытия
+   из списка ушли: там он уже стоит и туда доносить нечего.
+   Доплаты за зону нет — цена зависит только от багажа, и это правило пассажир
+   может пересказать соседу. */
 const ZONES = [
-  { id:'plat',  art:'plat',  name:'Платформа',       gen:'платформы',       sub:'до головы платформы',        ph:'платформа' },
-  { id:'hall',  art:'hall',  name:'Зал прибытия',    gen:'зала прибытия',   sub:'у выхода в город, стойка 3', ph:'зал' },
-  { id:'store', art:'store', name:'Камера хранения', gen:'камеры хранения', sub:'цокольный этаж вокзала',     ph:'хранение' }
+  { id:'taxi',  art:'taxi',  name:'Стоянка такси',   gen:'стоянки такси',   sub:'привокзальная площадь',   ph:'стоянка такси' },
+  { id:'metro', art:'metro', name:'Вход в метро',    gen:'входа в метро',   sub:'вестибюль станции',       ph:'метро' },
+  { id:'store', art:'store', name:'Камера хранения', gen:'камеры хранения', sub:'цокольный этаж вокзала',  ph:'хранение' }
 ];
 
 /* Промежуточные точки маршрута до зоны. Это не план вокзала, а последовательность
    именованных точек обслуживания — геометрию здания мы показывать не вправе. */
 const ZONE_ROUTE = {
-  plat:  [],
-  hall:  ['Зал прибытия'],
-  store: ['Зал прибытия', 'Цокольный этаж']
+  taxi:  ['Зал прибытия', 'Выход в город'],
+  metro: ['Зал прибытия', 'Переход в метро'],
+  store: ['Зал прибытия']
 };
 
 const SIZES = [
@@ -1262,14 +1269,14 @@ const PORTERS = [
 ];
 
 const HISTORY = [
-  { date:'12 августа', st:'yar', zone:'Зал прибытия',    sum:650, stars:5 },
-  { date:'4 августа',  st:'kur', zone:'Платформа',       sum:450, stars:5 },
-  { date:'27 июля',    st:'len', zone:'Платформа',       sum:450, stars:5 },
+  { date:'12 августа', st:'yar', zone:'Стоянка такси',   sum:650, stars:5 },
+  { date:'4 августа',  st:'kur', zone:'Вход в метро',    sum:450, stars:5 },
+  { date:'27 июля',    st:'len', zone:'Стоянка такси',   sum:450, stars:5 },
   { date:'19 июля',    st:'yar', zone:'Камера хранения', sum:800, stars:4 },
   { date:'3 июля',     st:'kur', zone:'Камера хранения', sum:350, stars:4 },
-  { date:'21 июня',    st:'len', zone:'Зал прибытия',    sum:550, stars:5 },
-  { date:'8 июня',     st:'yar', zone:'Платформа',       sum:350, stars:5 },
-  { date:'30 мая',     st:'kur', zone:'Зал прибытия',    sum:600, stars:4 }
+  { date:'21 июня',    st:'len', zone:'Вход в метро',    sum:550, stars:5 },
+  { date:'8 июня',     st:'yar', zone:'Стоянка такси',   sum:350, stars:5 },
+  { date:'30 мая',     st:'kur', zone:'Вход в метро',    sum:600, stars:4 }
 ];
 
 const MONTHS = {
@@ -1292,6 +1299,8 @@ const PHRASES = [
 const ICONS = {
   hall:  '<path d="M4 21V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v16"/><path d="M2 21h20"/><path d="M9 21v-4.5a3 3 0 0 1 6 0V21"/><path d="M8 7.5h.01M12 7.5h.01M16 7.5h.01"/>',
   plat:  '<rect x="5" y="3" width="14" height="14" rx="3"/><path d="M5 11h14M9 17l-2 4M15 17l2 4M8.5 21h7"/><path d="M9 14h.01M15 14h.01"/>',
+  taxi:  '<path d="M4 16.5V12l2-4.5h12L20 12v4.5"/><path d="M3.5 16.5h17"/><path d="M6.5 16.5v2.5h-2v-2.5M19.5 16.5v2.5h-2v-2.5"/><path d="M9 7.5V5.5h6v2"/><path d="M7.5 12.5h.01M16.5 12.5h.01"/>',
+  metro: '<circle cx="12" cy="12" r="9"/><path d="M7 15.5V9l5 4.5L17 9v6.5"/>',
   store: '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M12 3v18M4 12h16M8.5 7.5h.01M15.5 7.5h.01M8.5 16.5h.01M15.5 16.5h.01"/>',
   call:  '<path d="M6.5 3.5h3l1.5 4-2 1.5a12 12 0 0 0 6 6l1.5-2 4 1.5v3a1.5 1.5 0 0 1-1.7 1.5A16.5 16.5 0 0 1 5 5.2 1.5 1.5 0 0 1 6.5 3.5Z"/>',
   chat:  '<path d="M20 12a7.5 7.5 0 0 1-10.9 6.7L4 20l1.3-4.1A7.5 7.5 0 1 1 20 12Z"/>',
@@ -1335,7 +1344,7 @@ function faceSVG(p){
 const state = {
   station:'len',              /* выбран вручную; при билете берётся из него */
   trip:null,
-  zone:'hall',
+  zone:'taxi',
   size:'case',
   bags:1,
   stage:'idle',               /* idle → searching → assigned → arrived → picked → delivered → rating */
@@ -1397,10 +1406,14 @@ function plural(n, one, few, many){
 
 function places(){ return state.bags + ' ' + plural(state.bags, 'место', 'места', 'мест'); }
 
+/* Носильщик ждёт не у двери вагона. Из состава разом выходит несколько сот
+   человек, и поиск друг друга в этой толпе — худшая часть услуги. Встреча
+   всегда в одной размеченной точке у выхода с платформы: её видно издалека
+   и её можно показать на схеме. */
 function meetPlace(){
   return state.trip
-    ? 'Вагон ' + state.trip.car + ', платформа ' + state.trip.platform
-    : 'Зал прибытия, стойка 3';
+    ? 'Платформа ' + state.trip.platform + ', у выхода с перрона'
+    : 'У выхода с платформ';
 }
 
 function mmss(sec){
@@ -1412,8 +1425,8 @@ function mmss(sec){
 function routePoints(){
   const zn = zoneOf();
   const start = state.trip
-    ? { nm:'Вагон ' + state.trip.car + ' · платформа ' + state.trip.platform, ph:'платформа' }
-    : { nm:'Место встречи', ph:'встреча' };
+    ? { nm:'Зона встречи · платформа ' + state.trip.platform, ph:'зона встречи' }
+    : { nm:'Зона встречи', ph:'зона встречи' };
 
   const mid = (ZONE_ROUTE[zn.id] || []).map(nm => ({ nm:nm, ph:nm.toLowerCase() }));
   const pts = [start].concat(mid, [{ nm:zn.name, ph:zn.ph }]);
@@ -1847,26 +1860,23 @@ function sheetOrderForm(){
   body(
     passHTML() +
 
-    '<div class="meet">' +
+    '<button class="meet" type="button" data-act="zone-map">' +
       '<span class="meet__ic">' + icon('plat', 20) + '</span>' +
-      '<span class="meet__txt"><b>Встретим у вагона</b><span>' + meetPlace() + '</span></span>' +
-    '</div>' +
+      '<span class="meet__txt"><b>Зона встречи</b><span>' + meetPlace() + '</span></span>' +
+      '<span class="meet__chev">' + icon('chev', 18) + '</span>' +
+    '</button>' +
 
-    '<div class="group">Куда донести багаж' +
-      '<button class="group__act" type="button" data-act="zone-map">Карта зон</button>' +
-    '</div>' +
+    '<div class="group">Куда донести багаж</div>' +
     zoneRows() +
 
-    '<div class="group">Что несём</div>' +
-    '<div class="sizes" id="sizes"></div>' +
-    '<div class="stepper">' +
-      '<span class="stepper__txt"><b>Сколько мест</b><span id="bags-hint"></span></span>' +
+    '<div class="group">Что несём' +
       '<span class="stepper__ctl">' +
         '<button type="button" data-act="bag-minus" aria-label="Меньше">−</button>' +
-        '<span class="stepper__n nums" id="bags-n">1</span>' +
+        '<span class="stepper__n nums" id="bags-n">1 место</span>' +
         '<button type="button" data-act="bag-plus" aria-label="Больше">+</button>' +
       '</span>' +
     '</div>' +
+    '<div class="sizes" id="sizes"></div>' +
 
     '<p class="note" id="price-note"></p>'
   );
@@ -1883,8 +1893,8 @@ function zoneTree(pick){
   /* Вагон из билета — только там, где выбирают зону для своей поездки.
      В справке о чужом вокзале эта строка была бы неправдой. */
   const meet = pick && state.trip
-    ? 'Вагон ' + state.trip.car + ' · платформа ' + state.trip.platform
-    : 'Ваш вагон на платформе';
+    ? 'Зона встречи · платформа ' + state.trip.platform
+    : 'Зона встречи у выхода с платформ';
 
   const branch = (z) => {
     /* в ветке — путь от места встречи до зоны, без описания здания;
@@ -1917,7 +1927,7 @@ function sheetZoneMap(){
       photo(PHOTOS.station[st.id], st.name, 'shead__art',
             '<span class="shead__art ph">фото вокзала</span>') +
       '<div class="shead__txt"><b>' + st.name + '</b>' +
-        '<small>Путь всегда начинается у вашего вагона</small></div>' +
+        '<small>Путь всегда начинается в зоне встречи</small></div>' +
     '</div>' +
 
     zoneTree(true)
@@ -1941,8 +1951,7 @@ function renderBags(){
 
 
   const r = calc();
-  $('bags-n').textContent = state.bags;
-  $('bags-hint').textContent = r.people === 2 ? 'Придут вдвоём' : 'Один носильщик справится';
+  $('bags-n').textContent = places();
 
   const minus = document.querySelector('[data-act="bag-minus"]');
   const plus  = document.querySelector('[data-act="bag-plus"]');
