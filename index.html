@@ -1134,6 +1134,9 @@ button{ background:none; border:0; cursor:pointer; text-align:left; }
   display:grid; place-items:center; overflow:hidden;
 }
 .zshot__art img{ width:100%; height:100%; object-fit:contain; display:block; }
+/* Снимок выхода на платформу — фотография, а не вырезанный предмет:
+   её нужно кадрировать, иначе в квадрате останутся поля по бокам. */
+.zshot__art--shot img{ object-fit:cover; object-position:61% 44%; }
 .zshot__txt{ min-width:0; }
 .zshot__txt b{ display:block; font-size:16.5px; font-weight:700; letter-spacing:-.02em; }
 .zshot__txt span{ display:block; font-size:13px; color:var(--ink-2); margin-top:3px; line-height:1.35; }
@@ -1451,10 +1454,18 @@ const PHOTOS = {
   route:  {}
 };
 
+/* Направление берётся из билета, а не спрашивается отдельным переключателем:
+   билет либо привозит пассажира на вокзал, либо увозит с него, и третьего
+   варианта не бывает. Спрашивать то, что уже написано в билете, — лишний шаг.
+     in  — пассажир приезжает: встреча у платформы, багаж несут в вокзал;
+     out — пассажир уезжает:   встреча в вокзале, багаж несут к вагону. */
 const TRIPS = [
-  { train:'Сапсан 754',   from:'Санкт-Петербург', station:'len', arrive:'11:25', car:7,  seat:32, platform:3 },
-  { train:'Ласточка 725', from:'Нижний Новгород', station:'kur', arrive:'09:40', car:4,  seat:18, platform:2 },
-  { train:'Экспресс 104', from:'Ярославль',       station:'yar', arrive:'14:10', car:12, seat:45, platform:5 }
+  { dir:'in',  train:'Сапсан 754',   city:'Санкт-Петербург', station:'len', time:'11:25', car:7,  seat:32, platform:3 },
+  { dir:'in',  train:'Ласточка 725', city:'Нижний Новгород', station:'kur', time:'09:40', car:4,  seat:18, platform:2 },
+  { dir:'in',  train:'Экспресс 104', city:'Ярославль',       station:'yar', time:'14:10', car:12, seat:45, platform:5 },
+  { dir:'out', train:'Сапсан 761',   city:'Санкт-Петербург', station:'len', time:'16:40', car:9,  seat:12, platform:1 },
+  { dir:'out', train:'Ласточка 730', city:'Нижний Новгород', station:'kur', time:'18:15', car:5,  seat:44, platform:4 },
+  { dir:'out', train:'Экспресс 117', city:'Ярославль',       station:'yar', time:'19:05', car:3,  seat:27, platform:6 }
 ];
 
 /* Куда донести — три конца пути внутри вокзала. Носильщик работает в периметре
@@ -1476,10 +1487,32 @@ const ZONE_ROUTE = {
   store: ['Зал прибытия', 'Цоколь']
 };
 
+/* Тот же путь для уезжающих. Это не reverse(): зал у платформ для приехавших
+   и для уезжающих называется по-разному, и подменять одно другим нельзя. */
+const ZONE_ROUTE_OUT = {
+  reg:   ['Вестибюль',   'Зал отправления'],
+  wait:  ['Второй этаж', 'Зал отправления'],
+  store: ['Цоколь',      'Зал отправления']
+};
+
+/* «Место» — слово из багажной квитанции, а не из речи пассажира: на вопрос
+   «сколько у вас мест» человек с двумя чемоданами задумывается. Поэтому
+   счётчик называет то, что пассажир выбрал строкой выше. Склонений три
+   набора не от любви к грамматике: по-русски «каждая следующая сумка»,
+   но «каждый следующий чемодан», и рассогласование видно сразу. */
 const SIZES = [
-  { id:'hand', name:'Ручная кладь', hint:'до 10 кг', base:350 },
-  { id:'case', name:'Чемоданы',     hint:'10–25 кг', base:450 },
-  { id:'big',  name:'Крупное',      hint:'от 25 кг', base:650 }
+  { id:'hand', name:'Ручная кладь', hint:'до 10 кг', base:350,
+    unit:['сумка', 'сумки', 'сумок'],
+    next:'Каждая следующая сумка — 100 ₽',
+    warn:'С четвёртой сумки работают двое: +350 ₽' },
+  { id:'case', name:'Чемоданы',     hint:'10–25 кг', base:450,
+    unit:['чемодан', 'чемодана', 'чемоданов'],
+    next:'Каждый следующий чемодан — 100 ₽',
+    warn:'С четвёртого чемодана работают двое: +350 ₽' },
+  { id:'big',  name:'Крупное',      hint:'от 25 кг', base:650,
+    unit:['вещь', 'вещи', 'вещей'],
+    next:'Каждая следующая вещь — 100 ₽',
+    warn:'С четвёртой вещи работают двое: +350 ₽' }
 ];
 
 const MARKS = ['Вежливый', 'Быстро', 'Аккуратно с багажом', 'Помог с посадкой'];
@@ -1491,8 +1524,8 @@ const NOTE_TIPS = ['Хрупкое внутри', 'Чемодан без кол�
 
 /* Услуга целиком, в порядке, в котором её проходит пассажир. */
 const HOW = [
-  ['Встречает у выхода с платформы',
-   'Платформу и время прибытия носильщик берёт из вашего билета'],
+  ['Встречает там, где вы стоите',
+   'Приезжаете — ждёт у выхода с платформы; уезжаете — подходит в зал'],
   ['Забирает багаж по коду',
    'Вы называете код из приложения — так видно, что багаж отдан своему носильщику'],
   ['Доносит и снимает на камеру',
@@ -1519,9 +1552,9 @@ const PORTERS = [
 const HISTORY = [
   { date:'12 августа', st:'yar', time:'09:40', zone:'Стойка регистрации', size:'case', bags:2, tip:100, sum:650,  stars:5 },
   { date:'4 августа',  st:'kur', time:'18:05', zone:'Зал ожидания',       size:'case', bags:1, tip:0,   sum:450,  stars:5 },
-  { date:'27 июля',    st:'len', time:'07:15', zone:'Стойка регистрации', size:'hand', bags:1, tip:100, sum:450,  stars:5 },
+  { date:'27 июля',    st:'len', time:'07:15', zone:'Стойка регистрации', size:'hand', bags:1, tip:100, sum:450,  stars:5, dir:'out', car:9, platform:1 },
   { date:'19 июля',    st:'yar', time:'13:50', zone:'Камера хранения',    size:'big',  bags:1, tip:100, sum:1100, stars:4 },
-  { date:'3 июля',     st:'kur', time:'21:30', zone:'Камера хранения',    size:'hand', bags:1, tip:0,   sum:350,  stars:4 },
+  { date:'3 июля',     st:'kur', time:'21:30', zone:'Камера хранения',    size:'hand', bags:1, tip:0,   sum:350,  stars:4, dir:'out', car:5, platform:4 },
   { date:'21 июня',    st:'len', time:'11:20', zone:'Зал ожидания',       size:'case', bags:1, tip:100, sum:550,  stars:5 },
   { date:'8 июня',     st:'yar', time:'16:45', zone:'Стойка регистрации', size:'hand', bags:1, tip:0,   sum:350,  stars:5 },
   { date:'30 мая',     st:'kur', time:'08:10', zone:'Зал ожидания',       size:'case', bags:2, tip:0,   sum:550,  stars:4 }
@@ -1536,7 +1569,7 @@ const MONTHS = {
 const PHRASES = [
   'Смотрим свободных у платформы',
   'Проверяем жилеты на смене',
-  'Уточняем время прибытия',
+  'Сверяем время по билету',
   'Почти нашли'
 ];
 
@@ -1653,15 +1686,35 @@ function plural(n, one, few, many){
   return many;
 }
 
-function places(){ return state.bags + ' ' + plural(state.bags, 'место', 'места', 'мест'); }
+function places(){
+  const u = sizeOf().unit;
+  return state.bags + ' ' + plural(state.bags, u[0], u[1], u[2]);
+}
+
+/* Пассажир уезжает — значит, багаж несут не в вокзал, а из вокзала к поезду. */
+function outbound(){ return !!state.trip && state.trip.dir === 'out'; }
+
+/* Конец пути: у приехавшего это зона вокзала, у уезжающего — его вагон. */
+function destName(){ return outbound() ? 'Вагон ' + state.trip.car : zoneOf().name; }
+function destGen(){  return outbound() ? 'вагона ' + state.trip.car : zoneOf().gen; }
+
+/* Уезжающего носильщик встречает не в минуту отправления: до вагона ещё идти,
+   а багаж перед этим надо принять и записать. */
+function minusMin(hhmm, m){
+  const p = hhmm.split(':');
+  let t = (+p[0]) * 60 + (+p[1]) - m;
+  if(t < 0) t += 24 * 60;
+  return String(Math.floor(t / 60)).padStart(2, '0') + ':' +
+         String(t % 60).padStart(2, '0');
+}
 
 /* Когда встретят. Точка отсчёта у пассажира одна — время прибытия из билета:
    либо он уже на перроне и носильщик идёт сейчас, либо поезд ещё в пути
    и встреча назначена на минуту прибытия. */
 function whenText(){
-  return state.when === 'now'
-    ? 'через ' + stationOf().wait + ' мин'
-    : state.trip ? 'в ' + state.trip.arrive : 'к прибытию поезда';
+  if(state.when === 'now') return 'через ' + stationOf().wait + ' мин';
+  if(!state.trip) return 'к прибытию поезда';
+  return 'в ' + (outbound() ? minusMin(state.trip.time, 25) : state.trip.time);
 }
 
 /* Цена слушается количества мест сильнее, чем размера: каждое следующее место
@@ -1669,13 +1722,14 @@ function whenText(){
    Сказать об этом надо до нажатия плюса — после это уже не предупреждение,
    а объяснение скачка. */
 function bagsHint(){
+  const sz = sizeOf();
   if(state.size === 'big')
     return { txt:'Крупное несут двое: +350 ₽', warn:false };
   if(state.bags >= 4)
     return { txt:'Работают двое: +350 ₽ в сумме', warn:true };
   if(state.bags === 3)
-    return { txt:'С четвёртого места работают двое: +350 ₽', warn:true };
-  return { txt:'Каждое следующее место — 100 ₽', warn:false };
+    return { txt:sz.warn, warn:true };
+  return { txt:sz.next, warn:false };
 }
 
 /* Носильщик ждёт не у двери вагона. Из состава разом выходит несколько сот
@@ -1683,6 +1737,10 @@ function bagsHint(){
    всегда в одной размеченной точке у выхода с платформы: её видно издалека
    и её можно показать на схеме. */
 function meetPlace(){
+  if(outbound()){
+    const z = zoneOf();
+    return z.name + ', ' + z.sub;
+  }
   return state.trip
     ? 'Платформа ' + state.trip.platform + ', у выхода с перрона'
     : 'У выхода с платформ';
@@ -1695,13 +1753,17 @@ function mmss(sec){
 
 /* Маршрутная лента: старт → промежуточные точки → зона передачи */
 function routePoints(){
-  const zn = zoneOf();
-  const start = state.trip
-    ? { nm:'Платформа ' + state.trip.platform, ph:'зона встречи' }
-    : { nm:'Зона встречи', ph:'зона встречи' };
+  const zn = zoneOf(), t = state.trip;
+  const zone  = { nm:zn.name, ph:zn.ph };
+  const table = outbound() ? ZONE_ROUTE_OUT : ZONE_ROUTE;
+  const mid   = (table[zn.id] || []).map(nm => ({ nm:nm, ph:nm.toLowerCase() }));
 
-  const mid = (ZONE_ROUTE[zn.id] || []).map(nm => ({ nm:nm, ph:nm.toLowerCase() }));
-  const pts = [start].concat(mid, [{ nm:zn.name, ph:zn.ph }]);
+  /* Лента читается в ту сторону, в какую едет пассажир: приехал — от платформы
+     вглубь вокзала, уезжает — из вокзала к своему вагону. */
+  const pts = outbound()
+    ? [zone].concat(mid, [{ nm:'Вагон ' + t.car, ph:'платформа' }])
+    : [t ? { nm:'Платформа ' + t.platform, ph:'зона встречи' }
+         : { nm:'Зона встречи', ph:'зона встречи' }].concat(mid, [zone]);
 
   /* две одинаковые точки подряд смысла не несут */
   return pts.filter((p, i) => i === 0 || p.nm !== pts[i - 1].nm);
@@ -1781,10 +1843,13 @@ function renderTopbar(){
 }
 
 function histRow(h, i){
+  const out = h.dir === 'out';
   return '<button class="row" type="button" data-act="past" data-i="' + i + '">' +
-    zoneIc(zoneByName(h.zone)) +
+    (out ? '<span class="row__ic">' + icon('plat', 21) + '</span>'
+         : zoneIc(zoneByName(h.zone))) +
     '<span class="row__body">' +
-      '<span class="row__label">' + h.date + ' · ' + h.zone.toLowerCase() + '</span>' +
+      '<span class="row__label">' + h.date + ' · ' +
+        (out ? 'вагон ' + h.car : h.zone.toLowerCase()) + '</span>' +
       '<span class="row__value">' + stById(h.st).name + '</span>' +
     '</span>' +
     '<span class="row__extra nums">' + money(h.sum) + '</span>' +
@@ -1821,8 +1886,8 @@ function renderActive(){
     searching: 'Смотрим свободных на ' + stationOf().short.toLowerCase(),
     assigned:  meetPlace(),
     arrived:   'Назовите код — и передайте багаж',
-    picked:    'Несёт до ' + zoneOf().gen,
-    delivered: 'Проверьте места: ' + places(),
+    picked:    'Несёт до ' + destGen(),
+    delivered: 'Пересчитайте багаж: ' + places(),
     rating:    p ? 'Жилет №' + p.vest : ''
   };
 
@@ -2018,7 +2083,11 @@ function mainBtn(act, label, price, disabled){
    а вся работа носильщика привязана именно к ним.
    ========================================================================= */
 
-const DEMO_TICKET = '74120093814021';   /* 14 цифр, для показа */
+/* Два номера для показа: по сумме цифр они попадают в разные рейсы, и один
+   билет привозит пассажира на вокзал, а другой увозит. Без второго примера
+   обратный маршрут на защите пришлось бы подбирать наугад. */
+const DEMO_TICKET     = '74120093814021';   /* приезд: Сапсан 754, Ленинградский */
+const DEMO_TICKET_OUT = '74120093814051';   /* отъезд: Сапсан 761, Ленинградский */
 
 function sheetTicket(){
   body(
@@ -2032,7 +2101,7 @@ function sheetTicket(){
       '<div class="reads">' +
         '<span class="reads__t">Возьмём из билета</span>' +
         '<span class="reads__l">' +
-          '<b>Вокзал</b><b>Поезд и вагон</b><b>Время прибытия</b>' +
+          '<b>Вокзал</b><b>Поезд и вагон</b><b>Время и платформа</b>' +
         '</span>' +
       '</div>' +
       '<button class="linkbtn" type="button" data-act="manual">Ввести номер вручную</button>' +
@@ -2051,7 +2120,12 @@ function sheetManual(){
       '<input id="tk" type="text" inputmode="numeric" maxlength="17" ' +
         'placeholder="7412 0093 8140 21" aria-label="Номер билета">' +
     '</div>' +
-    '<button class="linkbtn" type="button" data-act="demo-ticket">Подставить пример</button>'
+    '<div class="tags">' +
+      '<button class="tag" type="button" data-act="demo-ticket" ' +
+        'data-t="' + DEMO_TICKET + '">Пример: еду с поезда</button>' +
+      '<button class="tag" type="button" data-act="demo-ticket" ' +
+        'data-t="' + DEMO_TICKET_OUT + '">Пример: еду на поезд</button>' +
+    '</div>'
   );
   foot(mainBtn('read-manual', 'Найти рейс', '', true));
   setTimeout(() => { const f = $('tk'); if(f) f.focus(); }, 220);
@@ -2090,10 +2164,13 @@ function passHTML(){
   const st = STATIONS.find(s => s.id === t.station);
   return '<div class="pass">' +
     '<div class="pass__top"><span class="pass__train">' + t.train + '</span></div>' +
-    '<div class="pass__way">' + t.from + ' → ' + st.name + '</div>' +
+    '<div class="pass__way">' +
+      (t.dir === 'out' ? st.name + ' → ' + t.city : t.city + ' → ' + st.name) +
+    '</div>' +
     '<div class="pass__tear"></div>' +
     '<div class="pass__grid nums">' +
-      '<span><b>' + t.arrive + '</b><span>прибытие</span></span>' +
+      '<span><b>' + t.time + '</b><span>' +
+        (t.dir === 'out' ? 'отправление' : 'прибытие') + '</span></span>' +
       '<span><b>' + t.car + '</b><span>вагон</span></span>' +
       '<span><b>' + t.platform + '</b><span>платформа</span></span>' +
     '</div>' +
@@ -2133,24 +2210,38 @@ function zoneRows(){
    и место передачи — два конца одного пути, и разного вида им быть незачем.
    Ленты маршрута здесь нет: пока заказа не существует, показывать по ней
    нечего. */
+/* Строка с платформой. У приехавшего это начало пути и место встречи,
+   у уезжающего — конец пути и его вагон. Строка одна: это два конца одного
+   маршрута, и выглядеть по-разному им незачем. */
+function platRow(){
+  const t = state.trip, out = outbound();
+  const value = !t ? 'Встреча у выхода с платформ'
+    : out ? 'Вагон ' + t.car + ' · платформа ' + t.platform
+          : 'Встреча у платформы ' + t.platform;
+  const label = out ? 'Донесём к поезду — посмотреть выход'
+                    : 'Выход с перрона — посмотреть место';
+  return '<button class="row row--from" type="button" data-act="zone-map">' +
+      '<span class="row__ic row__ic--shot">' +
+        photo(PHOTOS.meet, '', 'ic3d', icon('plat', 21)) +
+      '</span>' +
+      '<span class="row__body">' +
+        '<span class="row__value">' + value + '</span>' +
+        '<span class="row__label">' + label + '</span>' +
+      '</span>' +
+      '<span class="row__chev">' + icon('chev', 18) + '</span>' +
+    '</button>';
+}
+
 function sheetOrderForm(){
   body(
     passHTML() +
 
     '<div class="group">Маршрут</div>' +
     '<div class="rows">' +
-      '<button class="row row--from" type="button" data-act="zone-map">' +
-        '<span class="row__ic row__ic--shot">' +
-          photo(PHOTOS.meet, '', 'ic3d', icon('plat', 21)) +
-        '</span>' +
-        '<span class="row__body">' +
-          '<span class="row__value">' + (state.trip ? 'Встреча у платформы ' + state.trip.platform : 'Встреча у выхода с платформ') + '</span>' +
-          '<span class="row__label">Выход с перрона — посмотреть место</span>' +
-        '</span>' +
-        '<span class="row__chev">' + icon('chev', 18) + '</span>' +
-      '</button>' +
-      '<div class="rows__sep">Куда донести</div>' +
-      zoneRows() +
+      (outbound()
+        ? '<div class="rows__sep">Откуда забрать</div>' + zoneRows() +
+          '<div class="rows__sep">Куда донести</div>' + platRow()
+        : platRow() + '<div class="rows__sep">Куда донести</div>' + zoneRows()) +
     '</div>' +
 
     '<div class="group">Когда встретить</div>' +
@@ -2161,7 +2252,7 @@ function sheetOrderForm(){
 
     '<div class="bagsn">' +
       '<span class="bagsn__txt">' +
-        '<b class="bagsn__n nums" id="bags-n">1 место</b>' +
+        '<b class="bagsn__n nums" id="bags-n">1 чемодан</b>' +
         '<span class="bagsn__hint" id="bags-hint"></span>' +
       '</span>' +
       '<span class="stepper__ctl">' +
@@ -2204,7 +2295,7 @@ function zoneTree(){
   return '<div class="zmap">' +
       '<div class="zmap__trunk">' +
         '<span class="zmap__node"><b>Зона встречи у выхода с платформ</b>' +
-          '<small>здесь вас встретят</small></span>' +
+          '<small>здесь встречают приехавших</small></span>' +
       '</div>' +
       '<div class="zmap__leaves">' + ZONES.map(branch).join('') + '</div>' +
     '</div>';
@@ -2228,21 +2319,25 @@ function sheetComment(){
    транспортной инфраструктуры — сведения ограниченного доступа (ФЗ-16),
    а то, что мы вправе показать, пассажиру всё равно не помогает
    сориентироваться. Помогает другое: как выглядит место, где его встретят,
-   и куда оттуда поедет багаж. */
+   и куда оттуда понесут багаж. */
 function sheetZoneMap(){
-  const t = state.trip;
+  const t = state.trip, out = outbound();
   body(
     '<div class="meetshot">' +
       photo(PHOTOS.meet, 'Выход с платформы под жёлтым указателем', 'meetshot__img') +
       '<span class="meetshot__tag">Указатель «Н»</span>' +
     '</div>' +
 
-    '<p class="lead">Носильщик ждёт ' +
-      (t ? 'у выхода с платформы ' + t.platform : 'у выхода с платформ') +
-      ', под жёлтым указателем с буквой «Н». Искать его не нужно: номер вагона ' +
-      'он знает из заказа и подойдёт сам.</p>' +
+    '<p class="lead">' + (out
+      ? 'Багаж донесут до вагона ' + t.car + ' на платформе ' + t.platform +
+        '. Выход к поездам — под жёлтым указателем с буквой «Н»: там же ' +
+        'носильщик передаст вам вещи у двери вагона.'
+      : 'Носильщик ждёт ' +
+        (t ? 'у выхода с платформы ' + t.platform : 'у выхода с платформ') +
+        ', под жёлтым указателем с буквой «Н». Искать его не нужно: номер ' +
+        'вагона он знает из заказа и подойдёт сам.') + '</p>' +
 
-    '<div class="group">Куда поедет багаж</div>' +
+    '<div class="group">Как понесут багаж</div>' +
     routeHTML()
   );
   foot(mainBtn('zone-done', 'Понятно'));
@@ -2259,25 +2354,31 @@ function whenHTML(){
       '<b>' + nm + '</b><span class="nums">' + sub + '</span>' +
     '</button>';
 
+  if(outbound())
+    return opt('now', 'Сейчас', 'через ' + st.wait + ' мин') +
+      opt('arrive', 'К поезду',
+          'в ' + minusMin(t.time, 25) + ' · платформа ' + t.platform);
+
   return opt('now', 'Сейчас', 'через ' + st.wait + ' мин') +
     opt('arrive', 'К прибытию',
-        t ? t.arrive + ' · платформа ' + t.platform : 'когда придёт поезд');
+        t ? t.time + ' · платформа ' + t.platform : 'когда придёт поезд');
 }
 
 /* Расчёт столбиком, а не строчкой-сноской: когда слагаемые видно по одному,
    появление второго носильщика перестаёт выглядеть ошибкой калькулятора. */
 function billHTML(){
   const r = calc(), sz = sizeOf();
-  const rows = [['Первое место, ' + sz.name.toLowerCase(), sz.base]];
+  const u = sz.unit;
+  const rows = [[u[0].charAt(0).toUpperCase() + u[0].slice(1) + ', ' + sz.hint, sz.base]];
 
   if(state.bags > 1)
     rows.push(['Ещё ' + (state.bags - 1) + ' ' +
-      plural(state.bags - 1, 'место', 'места', 'мест'), 100 * (state.bags - 1)]);
+      plural(state.bags - 1, u[0], u[1], u[2]), 100 * (state.bags - 1)]);
 
   if(r.people === 2)
     rows.push([state.size === 'big'
       ? 'Второй носильщик — крупный багаж'
-      : 'Второй носильщик — от четырёх мест', 350]);
+      : 'Второй носильщик — от четырёх ' + u[2], 350]);
 
   return rows.map(row =>
       '<span class="bill__r"><span>' + row[0] + '</span>' +
@@ -2408,6 +2509,25 @@ function starRow(n, size){
 
 /* Куда несём багаж — картинкой, а не строкой списка. Без аргументов берёт
    текущий заказ, с аргументами — любой прошлый. */
+/* Конец пути картинкой. У приехавшего это зона вокзала, у уезжающего — вагон;
+   карточка одна и та же, меняется только содержимое. */
+function platShot(car, platform, st){
+  return '<div class="zshot">' +
+    '<span class="zshot__art zshot__art--shot">' +
+      photo(PHOTOS.meet, '', '', icon('plat', 40)) +
+    '</span>' +
+    '<span class="zshot__txt">' +
+      '<b>Вагон ' + car + '</b>' +
+      '<span>' + st.short + ' · платформа ' + platform + '</span>' +
+    '</span>' +
+  '</div>';
+}
+
+function destShot(){
+  const t = state.trip;
+  return outbound() ? platShot(t.car, t.platform, stationOf()) : zoneShot();
+}
+
 function zoneShot(zn, st){
   zn = zn || zoneOf();
   st = st || stationOf();
@@ -2453,8 +2573,8 @@ function stageLine(){
   if(state.stage === 'assigned')
     return { t:'Идёт к вам', s:'Встретит ' + whenText() + ' · ' + meetPlace() };
   if(state.stage === 'arrived')   return { t:'Ждёт на месте', s:'Назовите код — и передайте багаж' };
-  if(state.stage === 'picked')    return { t:'Несёт багаж',   s:'Принял ' + places() + ' · до ' + zn.gen };
-  if(state.stage === 'delivered') return { t:'Передал багаж', s:'Проверьте места: ' + places() };
+  if(state.stage === 'picked')    return { t:'Несёт багаж',   s:'Принял ' + places() + ' · до ' + destGen() };
+  if(state.stage === 'delivered') return { t:'Передал багаж', s:'Пересчитайте багаж: ' + places() };
   return { t:'Багаж доставлен', s:'Оцените работу' };
 }
 
@@ -2503,7 +2623,7 @@ function sheetOrder(){
     '</div>' +
 
     '<div class="group">Куда несём багаж</div>' +
-    zoneShot() +
+    destShot() +
     '<div class="card">' + routeHTML() +
       '<p class="fine">' + oneStation() + '</p>' +
     '</div>'
@@ -2670,6 +2790,9 @@ function submitRating(){
     st:r.st.id,
     time:new Date().toTimeString().slice(0, 5),
     zone:r.zn.name,
+    dir:outbound() ? 'out' : 'in',
+    car:state.trip ? state.trip.car : 0,
+    platform:state.trip ? state.trip.platform : 0,
     size:state.size,
     bags:state.bags,
     tip:state.tip,
@@ -2734,7 +2857,9 @@ function sheetStationInfo(id){
       '</span>').join('') + '</div>' +
 
     '<div class="group">Куда доносим багаж</div>' +
-    zoneTree()
+    zoneTree() +
+    '<p class="fine">Уезжающим — наоборот: носильщик подходит в зал, забирает ' +
+      'багаж там и доносит до вагона. Направление приложение берёт из билета.</p>'
   );
 }
 
@@ -2793,12 +2918,13 @@ function sheetPastOrder(arg){
     '</div>' +
 
     '<div class="group">Куда донесли</div>' +
-    zoneShot(zn, st) +
+    (h.dir === 'out' ? platShot(h.car, h.platform, st) : zoneShot(zn, st)) +
 
     '<div class="group">Из чего сложилась сумма</div>' +
     '<div class="rows">' +
       bill(sz.name,
-           h.bags + ' ' + plural(h.bags, 'место', 'места', 'мест') + ' · ' + sz.hint,
+           h.bags + ' ' + plural(h.bags, sz.unit[0], sz.unit[1], sz.unit[2]) +
+             ' · ' + sz.hint,
            fare) +
       (h.tip
         ? bill('Чаевые', 'Сверх стоимости, целиком носильщику', h.tip)
@@ -2890,7 +3016,7 @@ function shareText(){
   return 'Носильщик ' + p.name + ', жилет №' + p.vest + '.\n' +
          'Встреча: ' + meetPlace().toLowerCase() + '.\n' +
          'Код: ' + code + '.\n' +
-         'Дальше — ' + zoneOf().name.toLowerCase() + '.';
+         'Дальше — ' + destName().toLowerCase() + '.';
 }
 
 async function doShare(){
@@ -2935,9 +3061,11 @@ const NOTE_SUPPORT = { title:'Поддержка', head:'Поддержка кр
        'В прототипе обращение никуда не уходит.' };
 
 const NOTE_RULES = { title:'Правила', head:'Как работает услуга',
-  text:'Носильщик встречает у вагона: платформу и время он берёт из вашего билета. ' +
-       'Багаж принимает по коду из приложения и снимает на камеру, когда принимает ' +
-       'и когда отдаёт. Доносит до точки внутри вокзала — за его пределы не выходит.' };
+  text:'Поезд, вагон и время носильщик берёт из вашего билета. Приезжаете — ' +
+       'встречает у выхода с платформы и доносит багаж до точки внутри вокзала; ' +
+       'уезжаете — забирает багаж в зале и доносит до вагона. Принимает по коду ' +
+       'из приложения и снимает на камеру, когда принимает и когда отдаёт. ' +
+       'Всё в границах одного вокзала — за его пределы не выходит.' };
 
 const NOTE_OUT = { title:'Выход', head:'Выход из аккаунта',
   text:'В прототипе аккаунт один, данные в нём захардкожены — выходить некуда.' };
@@ -3001,7 +3129,7 @@ function onAct(e){
 
   if(act === 'demo-ticket'){
     const f = $('tk');
-    f.value = '7412 0093 8140 21';
+    f.value = (el.dataset.t || DEMO_TICKET).replace(/(\d{4})(?=\d)/g, '$1 ');
     checkManual();
     return;
   }
