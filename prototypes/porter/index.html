@@ -230,6 +230,27 @@ button{ background:none; border:0; cursor:pointer; text-align:left; }
 }
 .logo i{ font-style:normal; color:var(--yellow); }
 
+/* Заставка при запуске: белый фон и марка по центру. Держится пару секунд
+   и уходит сама — тапать по ней не нужно. */
+.splash{
+  position:fixed; inset:0; z-index:90;
+  background:#fff;
+  display:grid; place-items:center;
+  animation:splash-out 420ms var(--ease) 1700ms both;
+}
+.splash .logo{
+  font-size:30px; padding:14px 24px 15px;
+  animation:splash-in 560ms cubic-bezier(.34,1.42,.5,1) both;
+}
+@keyframes splash-in{
+  from{ opacity:0; transform:translateY(10px) scale(.94); }
+  to{ opacity:1; transform:none; }
+}
+@keyframes splash-out{ to{ opacity:0; visibility:hidden; } }
+@media (prefers-reduced-motion: reduce){
+  .splash, .splash .logo{ animation-duration:1ms; animation-delay:1400ms; }
+}
+
 .ava{
   width:44px; height:44px; flex:none; margin-left:auto;
   border-radius:var(--r-pill);
@@ -1324,6 +1345,9 @@ button{ background:none; border:0; cursor:pointer; text-align:left; }
 </style>
 </head>
 <body>
+
+<!-- Заставка. Убирается из разметки после показа, чтобы не ловить фокус. -->
+<div class="splash" id="splash"><span class="logo">Bag<i>Go</i></span></div>
 
 <!-- ============================================================================
      ЭКРАН 1 — ГЛАВНАЯ. Здесь только то, ради чего приложение открывают:
@@ -3485,6 +3509,9 @@ document.addEventListener('keydown', (e) => {
    ========================================================================= */
 
 renderHome();
+
+/* Заставку снимаем после её же анимации: блок поверх экрана перехватывал бы касания. */
+setTimeout(() => { const el = $('splash'); if(el) el.remove(); }, 2200);
 </script>
 </body>
 </html>
