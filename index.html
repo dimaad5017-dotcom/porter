@@ -371,6 +371,10 @@ button{ background:none; border:0; cursor:pointer; text-align:left; }
 .sw.on{ background:var(--yellow); }
 .sw.on i{ transform:translateX(18px); background:#fff; }
 
+/* Настройка, которой у телефона нет: строка гаснет целиком вместе
+   с переключателем — обещать нечего, и вид это говорит раньше подписи. */
+.row[disabled]{ opacity:.45; }
+
 /* --- плашка активного заказа --- */
 .active{
   display:flex; align-items:center; gap:12px;
@@ -1656,6 +1660,8 @@ const ICONS = {
   card:  '<rect x="3" y="5" width="18" height="14" rx="3"/><path d="M3 10h18M6.5 15H10"/>',
   help:  '<circle cx="12" cy="12" r="9"/><path d="M9.6 9.6a2.5 2.5 0 0 1 4.9.7c0 1.7-2.5 2-2.5 3.4"/><path d="M12 17.3h.01"/>',
   moon:  '<path d="M20 14.4A8.5 8.5 0 0 1 9.6 4 8.5 8.5 0 1 0 20 14.4Z"/>',
+  buzz:  '<rect x="7" y="2.5" width="10" height="19" rx="2.5"/>'
+       + '<path d="M10.6 5.6h2.8"/><path d="M3.5 9.3v5.4M20.5 9.3v5.4"/>',
   doc:   '<path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/><path d="M9.5 12.5h5M9.5 16h3.5"/>'
 };
 
@@ -2257,6 +2263,7 @@ function applyTicket(raw){
 
   renderTopbar();
   say('Билет распознан: ' + trip.train + ', вагон ' + trip.car);
+  buzz('ok');                      /* глаза на билете, а не на экране */
 
   /* билет распознан — шаг сканера в стеке больше не нужен: «назад»
      с формы заказа должно вести на главную, а не обратно в сканер */
@@ -2865,6 +2872,7 @@ function assign(){
   state.left = DEMO.meet;
 
   say('Носильщик ' + state.porter.name + ' назначен, жилет ' + state.porter.vest);
+  buzz('meet');
   renderActive();
 
   /* Заказ принят — шаги оформления в стеке больше не нужны: «назад»
@@ -2896,6 +2904,7 @@ function arrive(){
   state.stage = 'arrived';
   state.left = 0;
   say('Носильщик на месте — передайте багаж по коду');
+  buzz('meet');                    /* главная новость всего заказа */
   renderActive();
   if(isOpen('order')) paintPage();
 }
@@ -2905,6 +2914,7 @@ function handOver(){
   state.left = DEMO.carry;
   /* Уезжающему зона — это место, где он багаж отдал. Несут его к вагону. */
   say('Багаж принят, носильщик несёт до ' + destGen());
+  buzz('ok');
   renderActive();
   if(isOpen('order')) paintPage();
   startTick();
@@ -2915,6 +2925,7 @@ function deliver(){
   state.stage = 'delivered';
   state.left = 0;
   say('Багаж передан — проверьте фото и подтвердите');
+  buzz('meet');
   renderActive();
   if(isOpen('order')) paintPage();
 }
@@ -2943,6 +2954,7 @@ function submitRating(){
     stars:state.stars
   });
   say('Спасибо! Оценка отправлена');
+  buzz('ok');
   resetOrder();
   goHome();
 }
@@ -3129,6 +3141,10 @@ function sheetMe(){
       meRow('data-act="theme"', 'moon', 'Тёмная тема',
             isDark() ? 'Включена' : 'Выключена',
             '<span class="sw' + (isDark() ? ' on' : '') + '" aria-hidden="true"><i></i></span>') +
+      meRow(CAN_BUZZ ? 'data-act="buzz"' : 'disabled', 'buzz', 'Вибрация',
+            CAN_BUZZ ? (buzzOn ? 'Отвечает на события заказа' : 'Выключена')
+                     : 'Этот телефон не умеет',
+            '<span class="sw' + (buzzOn ? ' on' : '') + '" aria-hidden="true"><i></i></span>') +
     '</div>' +
 
     '<div class="list">' +
@@ -3147,6 +3163,38 @@ function toggleTheme(){
   document.querySelector('meta[name="theme-color"]')
     .setAttribute('content', dark ? '#131211' : '#f1f0ee');
   say(dark ? 'Тёмная тема включена' : 'Светлая тема включена');
+}
+
+/* ============================================================================
+   ВИБРАЦИЯ
+
+   Вибрация здесь — голос приложения, а не эхо нажатия. Пассажир видит,
+   что кнопка нажалась; жужжать ему в ответ незачем. Дрожит телефон только
+   на новостях: билет прочитан, носильщик назначен, носильщик пришёл,
+   багаж принят, багаж донесён, оценка ушла.
+
+   Рисунка два, и они различимы в кармане на слух: короткий двойной —
+   «принято, идём дальше», длинный тройной — «к вам пришли, посмотрите».
+
+   navigator.vibrate работает в браузерах на Android и отсутствует
+   в Safari на iPhone. Там переключать нечего, поэтому строка в кабинете
+   гаснет и говорит об этом прямо.
+   ========================================================================= */
+
+const CAN_BUZZ = typeof navigator.vibrate === 'function';
+let buzzOn = CAN_BUZZ;
+
+const BUZZ = {
+  tap:  14,                        /* проба при включении */
+  ok:   [0, 16, 60, 16],           /* принято */
+  meet: [0, 34, 120, 34, 120, 60]  /* к вам пришли */
+};
+
+function buzz(kind){
+  if(!buzzOn) return;
+  /* Firefox с выключенным dom.vibrator бросает исключение — заказ из-за
+     тактильной мелочи падать не должен. */
+  try{ navigator.vibrate(BUZZ[kind]); }catch(e){}
 }
 
 /* ============================================================================
@@ -3384,6 +3432,15 @@ function onAct(e){
 
   /* Тёмная тема — переключателем в кабинете, а не системной настройкой */
   if(act === 'theme'){ toggleTheme(); return paintPage(); }
+
+  /* Включили — сразу почувствовали: переключатель обязан показать,
+     что именно он включает. */
+  if(act === 'buzz'){
+    buzzOn = !buzzOn;
+    buzz('tap');
+    say(buzzOn ? 'Вибрация включена' : 'Вибрация выключена');
+    return paintPage();
+  }
 
   if(act === 'home')  return goHome();
   if(act === 'back')  return backSheet();
