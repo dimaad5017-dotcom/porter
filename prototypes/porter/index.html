@@ -939,17 +939,19 @@ button{ background:none; border:0; cursor:pointer; text-align:left; }
 
 /* --- когда встретить -------------------------------------------------------
    Самое дорогое в услуге — время, а на форме его не было вовсе: «подача от
-   10 мин» осталась на главной и до экрана заказа не доехала. Вариантов два,
-   и оба отвечают минутой, а не обещанием. */
-.when{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+   10 мин» осталась на главной и до экрана заказа не доехала. Вариантов три,
+   и каждый отвечает минутой, а не обещанием. Три в ряд, а не два и один
+   под ними: это один вопрос с тремя ответами, и разбивать их на этажи
+   значит сделать вид, что третий — про другое. */
+.when{ display:grid; grid-template-columns:repeat(3, 1fr); gap:7px; }
 .whenb{
   display:flex; flex-direction:column; gap:2px;
-  text-align:left; padding:11px 13px;
+  text-align:left; padding:11px 11px;
   background:var(--surface); border-radius:var(--r-card);
   box-shadow:var(--shadow-card);
 }
-.whenb b{ font-size:14.5px; font-weight:700; letter-spacing:-.02em; }
-.whenb span{ font-size:12.5px; color:var(--ink-2); }
+.whenb b{ font-size:13.5px; font-weight:700; letter-spacing:-.03em; }
+.whenb span{ font-size:12px; color:var(--ink-2); }
 .whenb:active{ transform:scale(.97); }
 .whenb[aria-pressed="true"]{ box-shadow:0 0 0 2px var(--invert), var(--shadow-card); }
 
@@ -1177,15 +1179,19 @@ button{ background:none; border:0; cursor:pointer; text-align:left; }
 .tag[aria-pressed="true"]{ background:var(--invert); color:var(--invert-ink); box-shadow:none; }
 .tag.pop{ animation:pop .28s var(--ease); }
 
-.tips{ display:grid; grid-template-columns:repeat(4,1fr); gap:7px; }
-.tips button{
+/* Сетка минут живёт по тем же правилам, что и чаевые: четыре в ряд,
+   выбранное — инверсией. Один набор правил на две одинаковые сетки. */
+.tips, .slots{ display:grid; grid-template-columns:repeat(4,1fr); gap:7px; }
+.slots{ margin-top:14px; }
+.tips button, .slots button{
   padding:12px 4px; border-radius:var(--r-inner);
   background:var(--surface); text-align:center;
   font-size:14px; font-weight:600;
   box-shadow:var(--shadow-card);
   transition:background .16s var(--ease), color .16s var(--ease);
 }
-.tips button[aria-pressed="true"]{ background:var(--invert); color:var(--invert-ink); box-shadow:none; }
+.tips button[aria-pressed="true"],
+.slots button[aria-pressed="true"]{ background:var(--invert); color:var(--invert-ink); box-shadow:none; }
 
 /* --- кнопки --- */
 .btn{
@@ -1625,7 +1631,8 @@ const state = {
   zone:'reg',
   size:'case',
   bags:1,
-  when:'arrive',              /* встретить сейчас или к прибытию поезда */
+  when:'arrive',              /* сейчас, по билету или в выбранную минуту */
+  atTime:'',                  /* выбранная минута, пока when === 'time' */
   note:'',                    /* комментарий носильщику */
   stage:'idle',               /* idle → searching → assigned → arrived → picked → delivered → rating */
   porter:null,
@@ -1703,23 +1710,49 @@ function outbound(){ return !!state.trip && state.trip.dir === 'out'; }
 function destName(){ return outbound() ? 'Вагон ' + state.trip.car : zoneOf().name; }
 function destGen(){  return outbound() ? 'вагона ' + state.trip.car : zoneOf().gen; }
 
-/* Уезжающего носильщик встречает не в минуту отправления: до вагона ещё идти,
-   а багаж перед этим надо принять и записать. */
-function minusMin(hhmm, m){
+/* Сдвиг по часам в обе стороны, с переходом через полночь: поезда в 00:20
+   бывают, и подача к ним считается на вчерашние сутки. */
+function shiftMin(hhmm, m){
   const p = hhmm.split(':');
-  let t = (+p[0]) * 60 + (+p[1]) - m;
-  if(t < 0) t += 24 * 60;
+  let t = ((+p[0]) * 60 + (+p[1]) + m) % 1440;
+  if(t < 0) t += 1440;
   return String(Math.floor(t / 60)).padStart(2, '0') + ':' +
          String(t % 60).padStart(2, '0');
+}
+
+/* Уезжающего носильщик встречает не в минуту отправления: до вагона ещё идти,
+   а багаж перед этим надо принять и записать. */
+function boardTime(){ return shiftMin(state.trip.time, -25); }
+
+/* Часы телефона нужны ровно в одном месте — когда билета ещё нет
+   и отсчитывать сетку не от чего. */
+function nowHM(){
+  const d = new Date();
+  return String(d.getHours()).padStart(2, '0') + ':' +
+         String(d.getMinutes()).padStart(2, '0');
+}
+
+/* Восемь шагов по пятнадцать минут — два часа выбора. Больше не нужно:
+   носильщика зовут в день поездки и под конкретный поезд, а не на неделю
+   вперёд. Край сетки всегда упирается в билет, поэтому промахнуться
+   мимо своего поезда нельзя — таких минут в списке просто нет. */
+function timeSlots(){
+  const n = 8, step = 15, out = [];
+  const anchor = state.trip ? (outbound() ? boardTime() : state.trip.time)
+                            : shiftMin(nowHM(), 15);
+  for(let i = 0; i < n; i++)
+    out.push(shiftMin(anchor, outbound() ? -step * (n - 1 - i) : step * i));
+  return out;
 }
 
 /* Когда встретят. Точка отсчёта у пассажира одна — время прибытия из билета:
    либо он уже на перроне и носильщик идёт сейчас, либо поезд ещё в пути
    и встреча назначена на минуту прибытия. */
 function whenText(){
-  if(state.when === 'now') return 'через ' + stationOf().wait + ' мин';
+  if(state.when === 'now')  return 'через ' + stationOf().wait + ' мин';
+  if(state.when === 'time') return 'в ' + state.atTime;
   if(!state.trip) return 'к прибытию поезда';
-  return 'в ' + (outbound() ? minusMin(state.trip.time, 25) : state.trip.time);
+  return 'в ' + (outbound() ? boardTime() : state.trip.time);
 }
 
 /* Цена слушается количества вещей сильнее, чем размера: каждая следующая
@@ -1955,6 +1988,7 @@ const SHEETS = {
   stinfo:  { title:'Вокзал',            render:sheetStationInfo },
   cmnt:    { title:'Комментарий',       render:sheetComment },
   zmap:    { title:'Место встречи',     render:sheetZoneMap },
+  when:    { title:'Во сколько встретить', render:sheetWhen },
   note:    { title:'Носильщик',         render:sheetNote }
 };
 
@@ -2346,9 +2380,11 @@ function sheetZoneMap(){
   foot(mainBtn('zone-done', 'Понятно'));
 }
 
-/* Два варианта времени, а не один: пассажир либо уже стоит с чемоданами
-   на перроне, либо ещё едет — и в обоих случаях ему нужна не «подача от
-   10 мин» вообще, а конкретная минута. */
+/* Три ответа, и каждый — минута, а не обещание. «Сейчас» для того, кто уже
+   стоит с чемоданами; «по билету» для того, кто ещё едет; «ко времени» для
+   того, кто приедет на вокзал заранее и знает во сколько.
+   Номер платформы с кнопок снят: он написан строкой выше, в карточке
+   маршрута, а ширины на третий вариант иначе не хватает. */
 function whenHTML(){
   const st = stationOf(), t = state.trip;
   const opt = (id, nm, sub) =>
@@ -2357,14 +2393,30 @@ function whenHTML(){
       '<b>' + nm + '</b><span class="nums">' + sub + '</span>' +
     '</button>';
 
-  if(outbound())
-    return opt('now', 'Сейчас', 'через ' + st.wait + ' мин') +
-      opt('arrive', 'К поезду',
-          'в ' + minusMin(t.time, 25) + ' · платформа ' + t.platform);
-
   return opt('now', 'Сейчас', 'через ' + st.wait + ' мин') +
-    opt('arrive', 'К прибытию',
-        t ? t.time + ' · платформа ' + t.platform : 'когда придёт поезд');
+    (outbound()
+      ? opt('arrive', 'К поезду',  'в ' + boardTime())
+      : opt('arrive', 'К приезду', t ? 'в ' + t.time : 'по билету')) +
+    opt('time', 'Ко времени',
+        state.when === 'time' && state.atTime ? 'в ' + state.atTime : 'выбрать');
+}
+
+/* Сетка минут. Выбор применяется на месте и закрывает шит: подтверждать
+   отдельной кнопкой нечего — нажатая минута и есть подтверждение. */
+function sheetWhen(){
+  body(
+    '<p class="lead">' + (outbound()
+      ? 'Подойдёт в зал к выбранной минуте и заберёт багаж. Позже ' +
+        boardTime() + ' встречать поздно: до вагона ещё идти.'
+      : 'Встретит у выхода с платформы. Раньше прибытия поезда встречать ' +
+        'некого, поэтому отсчёт идёт от него.') + '</p>' +
+    '<div class="slots">' + timeSlots().map(hm =>
+      '<button type="button" data-act="slot" data-t="' + hm + '" ' +
+        'aria-pressed="' + (state.when === 'time' && state.atTime === hm) + '">' +
+        '<span class="nums">' + hm + '</span>' +
+      '</button>').join('') + '</div>'
+  );
+  foot('');
 }
 
 /* Расчёт столбиком, а не строчкой-сноской: когда слагаемые видно по одному,
@@ -3171,7 +3223,22 @@ function onAct(e){
     return paintPage();          /* вернулись на форму — цена уже новая */
   }
 
-  if(act === 'when'){ state.when = el.dataset.id; return renderBags(); }
+  if(act === 'when'){
+    state.when = el.dataset.id;
+    renderBags();
+    /* «Ко времени» без минуты — пустое обещание, поэтому сетка открывается
+       сразу и повторным нажатием, когда минуту хотят поменять. */
+    if(state.when === 'time') return pushSheet('when');
+    return;
+  }
+
+  if(act === 'slot'){
+    state.when = 'time';
+    state.atTime = el.dataset.t;
+    closeSheet();
+    return paintPage();
+  }
+
   if(act === 'size'){ state.size = el.dataset.id; return renderBags(); }
   if(act === 'bag-plus'){  state.bags = Math.min(6, state.bags + 1); return renderBags(); }
   if(act === 'bag-minus'){ state.bags = Math.max(1, state.bags - 1); return renderBags(); }
