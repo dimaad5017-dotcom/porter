@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#f1f0ee">
-<title>Носильщик</title>
+<title>BagGo — носильщик на вокзале</title>
 
 <!--
-  Носильщик — заказ носильщика на вокзале.
+  BagGo — заказ носильщика на вокзале.
   Один файл, без сборщиков и CDN: открывается двойным кликом, работает офлайн.
   Данные захардкожены — бэкенда нет.
 
@@ -150,6 +150,12 @@ html[data-theme="dark"] .tile__photo{ filter:brightness(.95) saturate(.97); }
    один рисунок на светлой подложке — получить грязное пятно в светлой рамке. */
 html[data-theme="dark"] .stile{ filter:brightness(.9) saturate(.96); }
 
+/* В темноте плашка под вордмарком лишняя: страница сама стала тёмной,
+   и жёлтый читается прямо на ней. */
+html[data-theme="dark"] .logo{
+  background:none; box-shadow:none; padding-left:2px; padding-right:2px;
+}
+
 *{ margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
 
 /* Классы блоков задают display, поэтому атрибут hidden сам по себе
@@ -199,15 +205,30 @@ button{ background:none; border:0; cursor:pointer; text-align:left; }
   padding:0 16px calc(28px + env(safe-area-inset-bottom));
 }
 
-/* Шапка здоровается и показывает контекст поездки, а не название приложения:
-   имя продукта на своём же экране пассажиру ничего не сообщает. */
+/* Шапка: имя слева, аккаунт справа, приветствие под ними. Приветствие
+   осталось крупным — здоровается с человеком приложение, а не наоборот,
+   и на своём экране он читает обращение, а не вывеску. */
 .head{
-  display:flex; align-items:center; gap:12px;
   padding:calc(16px + env(safe-area-inset-top)) 2px 16px;
 }
+.head__top{ display:flex; align-items:center; gap:12px; }
 .head__hi{
   font-size:30px; font-weight:800; letter-spacing:-.035em;
+  margin-top:16px;
 }
+
+/* Вордмарк. Жёлтый прямо на светлой странице не читается: #FCE000 на #F1F0EE
+   это 1,2 к 1 при минимуме 4,5 — буквы пропадают. На тёмной плашке тот же
+   жёлтый даёт 13 к 1. Плашка не темнеет вместе с темой: перевернуть её
+   значит вернуть жёлтый на светлое и снова его потерять. */
+.logo{
+  display:inline-block;
+  padding:8px 13px 9px; border-radius:var(--r-pill);
+  background:#21201f; color:#fff;
+  font-size:17px; font-weight:800; letter-spacing:-.035em;
+  box-shadow:var(--shadow-card);
+}
+.logo i{ font-style:normal; color:var(--yellow); }
 
 .ava{
   width:44px; height:44px; flex:none; margin-left:auto;
@@ -1303,8 +1324,11 @@ button{ background:none; border:0; cursor:pointer; text-align:left; }
 <div class="app" id="scr-home">
 
   <header class="head">
-    <div class="head__hi" id="greeting">Добрый день</div>
-    <button class="ava" id="ava-btn" type="button" aria-label="Кабинет">ДА</button>
+    <div class="head__top">
+      <span class="logo">Bag<i>Go</i></span>
+      <button class="ava" id="ava-btn" type="button" aria-label="Кабинет">ДА</button>
+    </div>
+    <h1 class="head__hi" id="greeting">Добрый день</h1>
   </header>
 
   <main class="feed">
