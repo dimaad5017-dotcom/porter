@@ -420,6 +420,8 @@ button{ background:none; border:0; cursor:pointer; text-align:left; }
 .li:last-child{ border-bottom:0; }
 .li:active{ background:var(--surface-2); }
 .li .meta{ margin-left:auto; color:var(--ink-2); font-size:14px; font-weight:400; }
+/* Выход не действие дня: он замыкает экран, а не зовёт на себя нажать */
+.li--quiet{ color:var(--ink-2); font-weight:600; justify-content:center; }
 .li .chev{ color:var(--ink-2); display:grid; place-items:center; }
 
 /* ============================================================================
@@ -1186,7 +1188,12 @@ const ICONS = {
   chat:  '<path d="M20 12a7.5 7.5 0 0 1-10.9 6.7L4 20l1.3-4.1A7.5 7.5 0 1 1 20 12Z"/>',
   share: '<path d="M12 3v12M12 3 8 7M12 3l4 4"/><path d="M5 13v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5"/>',
   chev:  '<path d="m9 6 6 6-6 6"/>',
-  check: '<path d="m5 12.5 4.5 4.5L19 7"/>'
+  check: '<path d="m5 12.5 4.5 4.5L19 7"/>',
+  hist:  '<path d="M3.6 12a8.4 8.4 0 1 0 2.7-6.2"/><path d="M3 3.5V8h4.5"/><path d="M12 7.8V12l3 1.9"/>',
+  card:  '<rect x="3" y="5" width="18" height="14" rx="3"/><path d="M3 10h18M6.5 15H10"/>',
+  help:  '<circle cx="12" cy="12" r="9"/><path d="M9.6 9.6a2.5 2.5 0 0 1 4.9.7c0 1.7-2.5 2-2.5 3.4"/><path d="M12 17.3h.01"/>',
+  moon:  '<path d="M20 14.4A8.5 8.5 0 0 1 9.6 4 8.5 8.5 0 1 0 20 14.4Z"/>',
+  doc:   '<path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/><path d="M9.5 12.5h5M9.5 16h3.5"/>'
 };
 
 function icon(key, size, w){
@@ -2237,21 +2244,38 @@ function sheetPastOrder(arg){
 }
 
 function sheetMe(){
+  const n = HISTORY.length;
+  const chev = '<span class="row__chev">' + icon('chev', 18, 2) + '</span>';
+
+  const meRow = (attrs, ic, name, sub, tail) =>
+    '<button class="row" type="button" ' + attrs + '>' +
+      '<span class="row__ic">' + icon(ic, 21) + '</span>' +
+      '<span class="row__body">' +
+        '<span class="row__value">' + name + '</span>' +
+        '<span class="row__label">' + sub + '</span>' +
+      '</span>' + tail +
+    '</button>';
+
   body(
     '<div class="me">' +
       '<span class="me__ava">ДА</span>' +
       '<span><span class="me__name">Дмитрий</span><span class="me__phone nums">+7 900 123-45-67</span></span>' +
     '</div>' +
+    '<div class="rows">' +
+      meRow('data-act="go" data-to="history"', 'hist', 'История заказов',
+            n + ' ' + plural(n, 'заказ', 'заказа', 'заказов'), chev) +
+      meRow('data-act="pay"', 'card', 'Способ оплаты',
+            'Карта •••• 4417', chev) +
+      meRow('data-act="support"', 'help', 'Поддержка',
+            'Круглосуточно', chev) +
+      meRow('data-act="rules"', 'doc', 'Правила услуги',
+            'Встреча, код и фотофиксация', chev) +
+      meRow('data-act="theme"', 'moon', 'Тёмная тема',
+            isDark() ? 'Включена' : 'Выключена',
+            '<span class="sw' + (isDark() ? ' on' : '') + '" aria-hidden="true"><i></i></span>') +
+    '</div>' +
     '<div class="list">' +
-      '<button class="li" type="button" data-act="go" data-to="history">История заказов' +
-        '<span class="meta">' + HISTORY.length + '</span></button>' +
-      '<button class="li" type="button" data-act="pay">Способ оплаты' +
-        '<span class="meta nums">•••• 4417</span></button>' +
-      '<button class="li" type="button" data-act="support">Поддержка' +
-        '<span class="meta">Круглосуточно</span></button>' +
-      '<button class="li" type="button" data-act="theme">Тёмная тема' +
-        '<span class="sw' + (isDark() ? ' on' : '') + '" aria-hidden="true"><i></i></span>' +
-      '</button>' +
+      '<button class="li li--quiet" type="button" data-act="signout">Выйти</button>' +
     '</div>'
   );
 }
@@ -2321,6 +2345,14 @@ function noteChat(){
 const NOTE_SUPPORT = { title:'Поддержка', head:'Поддержка круглосуточно',
   text:'Разбираем спорные ситуации по фотофиксации и коду передачи. ' +
        'В прототипе обращение никуда не уходит.' };
+
+const NOTE_RULES = { title:'Правила', head:'Как работает услуга',
+  text:'Носильщик встречает у вагона: платформу и время он берёт из вашего билета. ' +
+       'Багаж принимает по коду из приложения и снимает на камеру, когда принимает ' +
+       'и когда отдаёт. Доносит до точки внутри вокзала — за его пределы не выходит.' };
+
+const NOTE_OUT = { title:'Выход', head:'Выход из аккаунта',
+  text:'В прототипе аккаунт один, данные в нём захардкожены — выходить некуда.' };
 
 const NOTE_PAY = { title:'Оплата', head:'Способ оплаты',
   text:'Списываем с карты после подтверждения «Получил багаж», чаевые — отдельно. ' +
@@ -2463,6 +2495,8 @@ function onAct(e){
   if(act === 'chat')    return pushSheet('note', noteChat());
   if(act === 'support') return pushSheet('note', NOTE_SUPPORT);
   if(act === 'pay')     return pushSheet('note', NOTE_PAY);
+  if(act === 'rules')   return pushSheet('note', NOTE_RULES);
+  if(act === 'signout') return pushSheet('note', NOTE_OUT);
 
   if(act === 'go')       return pushPage(el.dataset.to);
   if(act === 'past')     return pushPage('past', el.dataset.i);
