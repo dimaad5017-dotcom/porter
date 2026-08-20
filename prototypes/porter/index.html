@@ -150,7 +150,10 @@ html[data-theme="dark"]{
    светлый фон в темноте светится ярче всего на экране. Вокзалы, тележку и
    значки зон не трогаем — под ними своя кремовая или жёлтая подложка, и на
    ней притушенный рисунок выглядит грязным, а не спокойным. */
-html[data-theme="dark"] .tile__photo{ filter:brightness(.9) saturate(.95); }
+html[data-theme="dark"] .tile__photo{ filter:brightness(.95) saturate(.97); }
+/* Карточку вокзала гасим целиком, вместе с кремовой подложкой: погасить
+   один рисунок на светлой подложке — получить грязное пятно в светлой рамке. */
+html[data-theme="dark"] .stile{ filter:brightness(.9) saturate(.96); }
 
 *{ margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
 
