@@ -667,6 +667,14 @@ button{ background:none; border:0; cursor:pointer; text-align:left; }
 }
 .field input::placeholder{ color:var(--ink-2); font-weight:400; letter-spacing:.02em; }
 
+.ta{
+  width:100%; resize:none; border:0; outline:0;
+  background:var(--surface); border-radius:var(--r-card);
+  padding:14px 16px; box-shadow:var(--shadow-card);
+  font:inherit; font-size:15px; line-height:1.4; color:var(--ink);
+}
+.ta::placeholder{ color:var(--ink-2); }
+
 .linkbtn{
   align-self:center;
   font-size:14px; font-weight:600; color:var(--ink-2);
@@ -829,8 +837,12 @@ button{ background:none; border:0; cursor:pointer; text-align:left; }
   background:var(--surface-2); color:var(--ink);
   display:grid; place-items:center;
 }
+.meet__txt{ flex:1; min-width:0; }
 .meet__txt b{ display:block; font-size:15px; font-weight:700; letter-spacing:-.02em; }
-.meet__txt span{ display:block; font-size:13px; color:var(--ink-2); margin-top:2px; }
+.meet__txt span{
+  display:block; font-size:13px; color:var(--ink-2); margin-top:2px;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
 
 /* --- схема вокзала ------------------------------------------------------
    Здание — один сплошной блок: внутренности объекта транспортной
@@ -1293,6 +1305,11 @@ const SIZES = [
 
 const MARKS = ['Вежливый', 'Быстро', 'Аккуратно с багажом', 'Помог с посадкой'];
 
+/* Подсказки для комментария — то, что чаще всего меняет работу носильщика:
+   как брать багаж, с какой скоростью идти и чего ждать на месте передачи. */
+const NOTE_TIPS = ['Хрупкое внутри', 'Чемодан без колёс', 'Еду с ребёнком',
+                   'Животное в переноске', 'Идём медленно'];
+
 /* Услуга целиком, в порядке, в котором её проходит пассажир. */
 const HOW = [
   ['Встречает у выхода с платформы',
@@ -1392,6 +1409,7 @@ const state = {
   zone:'taxi',
   size:'case',
   bags:1,
+  note:'',                    /* комментарий носильщику */
   stage:'idle',               /* idle → searching → assigned → arrived → picked → delivered → rating */
   porter:null,
   left:0,
@@ -1440,6 +1458,10 @@ function calc(){
   return { sum:sum, people: two ? 2 : 1, st:st, zn:zn };
 }
 
+/* В комментарий пишет человек, а вставляем мы его в строку разметки */
+const esc = (s) => s.replace(/[&<>"]/g, (c) =>
+  ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' })[c]);
+
 const money = (n) => n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' ₽';
 
 function plural(n, one, few, many){
@@ -1470,7 +1492,7 @@ function mmss(sec){
 function routePoints(){
   const zn = zoneOf();
   const start = state.trip
-    ? { nm:'Зона встречи · платформа ' + state.trip.platform, ph:'зона встречи' }
+    ? { nm:'Платформа ' + state.trip.platform, ph:'зона встречи' }
     : { nm:'Зона встречи', ph:'зона встречи' };
 
   const mid = (ZONE_ROUTE[zn.id] || []).map(nm => ({ nm:nm, ph:nm.toLowerCase() }));
@@ -1658,6 +1680,7 @@ const PAGES = {
 
 const SHEETS = {
   stinfo:  { title:'Вокзал',            render:sheetStationInfo },
+  cmnt:    { title:'Комментарий',       render:sheetComment },
   zmap:    { title:'Место встречи',     render:sheetZoneMap },
   note:    { title:'Носильщик',         render:sheetNote }
 };
@@ -1923,6 +1946,14 @@ function sheetOrderForm(){
     '</div>' +
     '<div class="sizes" id="sizes"></div>' +
 
+    '<button class="meet" type="button" data-act="cmnt">' +
+      '<span class="meet__ic">' + icon('chat', 20) + '</span>' +
+      '<span class="meet__txt"><b>Комментарий носильщику</b><span>' +
+        (state.note ? esc(state.note) : 'Что важно знать про багаж') +
+      '</span></span>' +
+      '<span class="meet__chev">' + icon('chev', 18) + '</span>' +
+    '</button>' +
+
     '<p class="note" id="price-note"></p>'
   );
   foot(mainBtn('call', 'Вызвать за', money(calc().sum)));
@@ -2009,6 +2040,20 @@ function stationMap(){
   return '<div class="smap"><svg viewBox="0 0 311 276" role="img" ' +
     'aria-label="Схема: платформы, здание вокзала и три точки, куда доносят багаж">' +
     s + '</svg></div>';
+}
+
+function sheetComment(){
+  body(
+    '<p class="lead">Носильщик прочитает это до того, как придёт: подготовит ремни, '
+      + 'тележку или просто не будет торопить.</p>' +
+    '<div class="tags">' + NOTE_TIPS.map(t =>
+      '<button class="tag" type="button" data-act="note-add" data-t="' + t + '">' + t + '</button>'
+    ).join('') + '</div>' +
+    '<textarea class="ta" id="note-ta" rows="4" maxlength="200" ' +
+      'placeholder="Например: чемодан без колёс, донесите до багажника"></textarea>'
+  );
+  foot(mainBtn('note-save', 'Сохранить'));
+  $('note-ta').value = state.note;
 }
 
 function sheetZoneMap(){
@@ -2183,6 +2228,15 @@ function sheetOrder(){
         '</span>' +
       '</div>' +
     '</div>' +
+    (state.note
+      ? '<div class="card"><div class="row" style="padding:0;border:0;pointer-events:none">' +
+          '<span class="row__ic">' + icon('chat', 20) + '</span>' +
+          '<span class="row__body">' +
+            '<span class="row__label">Ваш комментарий</span>' +
+            '<span class="row__value">' + esc(state.note) + '</span>' +
+          '</span>' +
+        '</div></div>'
+      : '') +
     '<div class="group">Куда несём багаж</div>' +
     '<div class="card">' + routeHTML() + '</div>' +
     '<div class="group">Фотофиксация</div>' +
@@ -2386,6 +2440,7 @@ function resetOrder(){
   state.tip = 0;
   state.trip = null;
   state.bags = 1;
+  state.note = '';
 }
 
 /* ============================================================================
@@ -2678,6 +2733,23 @@ function onAct(e){
     state.zone = el.dataset.id;
     say('Зона: ' + ZONES.find(z => z.id === state.zone).name);
     return paintSheet();
+  }
+
+  if(act === 'cmnt') return pushSheet('cmnt');
+
+  /* Подсказка не галочка, а заготовка текста: дописываем и отдаём поле человеку */
+  if(act === 'note-add'){
+    const ta = $('note-ta'), t = el.dataset.t;
+    const has = ta.value.trim().replace(/[,.\s]+$/, '');
+    ta.value = has ? has + ', ' + t.toLowerCase() : t;
+    ta.focus();
+    return;
+  }
+
+  if(act === 'note-save'){
+    state.note = $('note-ta').value.trim();
+    closeSheet();
+    return paintPage();
   }
 
   if(act === 'zone-done'){
