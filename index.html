@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#f1f0ee">
-<title>Носильщик</title>
+<title>BagGo — носильщик на вокзале</title>
 
 <!--
-  Носильщик — заказ носильщика на вокзале.
+  BagGo — заказ носильщика на вокзале.
   Один файл, без сборщиков и CDN: открывается двойным кликом, работает офлайн.
   Данные захардкожены — бэкенда нет.
 
@@ -150,6 +150,12 @@ html[data-theme="dark"] .tile__photo{ filter:brightness(.95) saturate(.97); }
    один рисунок на светлой подложке — получить грязное пятно в светлой рамке. */
 html[data-theme="dark"] .stile{ filter:brightness(.9) saturate(.96); }
 
+/* В темноте плашка под вордмарком лишняя: страница сама стала тёмной,
+   и жёлтый читается прямо на ней. */
+html[data-theme="dark"] .logo{
+  background:none; box-shadow:none; padding-left:2px; padding-right:2px;
+}
+
 *{ margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
 
 /* Классы блоков задают display, поэтому атрибут hidden сам по себе
@@ -199,15 +205,30 @@ button{ background:none; border:0; cursor:pointer; text-align:left; }
   padding:0 16px calc(28px + env(safe-area-inset-bottom));
 }
 
-/* Шапка здоровается и показывает контекст поездки, а не название приложения:
-   имя продукта на своём же экране пассажиру ничего не сообщает. */
+/* Шапка: имя слева, аккаунт справа, приветствие под ними. Приветствие
+   осталось крупным — здоровается с человеком приложение, а не наоборот,
+   и на своём экране он читает обращение, а не вывеску. */
 .head{
-  display:flex; align-items:center; gap:12px;
   padding:calc(16px + env(safe-area-inset-top)) 2px 16px;
 }
+.head__top{ display:flex; align-items:center; gap:12px; }
 .head__hi{
   font-size:30px; font-weight:800; letter-spacing:-.035em;
+  margin-top:16px;
 }
+
+/* Вордмарк. Жёлтый прямо на светлой странице не читается: #FCE000 на #F1F0EE
+   это 1,2 к 1 при минимуме 4,5 — буквы пропадают. На тёмной плашке тот же
+   жёлтый даёт 13 к 1. Плашка не темнеет вместе с темой: перевернуть её
+   значит вернуть жёлтый на светлое и снова его потерять. */
+.logo{
+  display:inline-block;
+  padding:8px 13px 9px; border-radius:var(--r-pill);
+  background:#21201f; color:#fff;
+  font-size:17px; font-weight:800; letter-spacing:-.035em;
+  box-shadow:var(--shadow-card);
+}
+.logo i{ font-style:normal; color:var(--yellow); }
 
 .ava{
   width:44px; height:44px; flex:none; margin-left:auto;
@@ -282,7 +303,7 @@ button{ background:none; border:0; cursor:pointer; text-align:left; }
 }
 .tile__txt{ min-width:0; display:flex; flex-direction:column; gap:4px; }
 .tile--go .tile__nm{ font-size:21px; font-weight:800; letter-spacing:-.032em; }
-/* «подача от 10 мин · от 350 ₽» отвечает на два главных вопроса сразу —
+/* «подача от 10 мин · от 190 ₽» отвечает на два главных вопроса сразу —
    бледнее основной подписи она быть может, полупрозрачной нет */
 .tile--go .tile__sub{ font-size:13.5px; color:rgba(33,32,31,.76); font-weight:600; }
 .tile__art{ flex:none; width:104px; color:var(--ink); }
@@ -939,17 +960,19 @@ button{ background:none; border:0; cursor:pointer; text-align:left; }
 
 /* --- когда встретить -------------------------------------------------------
    Самое дорогое в услуге — время, а на форме его не было вовсе: «подача от
-   10 мин» осталась на главной и до экрана заказа не доехала. Вариантов два,
-   и оба отвечают минутой, а не обещанием. */
-.when{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+   10 мин» осталась на главной и до экрана заказа не доехала. Вариантов три,
+   и каждый отвечает минутой, а не обещанием. Три в ряд, а не два и один
+   под ними: это один вопрос с тремя ответами, и разбивать их на этажи
+   значит сделать вид, что третий — про другое. */
+.when{ display:grid; grid-template-columns:repeat(3, 1fr); gap:7px; }
 .whenb{
   display:flex; flex-direction:column; gap:2px;
-  text-align:left; padding:11px 13px;
+  text-align:left; padding:11px 11px;
   background:var(--surface); border-radius:var(--r-card);
   box-shadow:var(--shadow-card);
 }
-.whenb b{ font-size:14.5px; font-weight:700; letter-spacing:-.02em; }
-.whenb span{ font-size:12.5px; color:var(--ink-2); }
+.whenb b{ font-size:13.5px; font-weight:700; letter-spacing:-.03em; }
+.whenb span{ font-size:12px; color:var(--ink-2); }
 .whenb:active{ transform:scale(.97); }
 .whenb[aria-pressed="true"]{ box-shadow:0 0 0 2px var(--invert), var(--shadow-card); }
 
@@ -1177,15 +1200,19 @@ button{ background:none; border:0; cursor:pointer; text-align:left; }
 .tag[aria-pressed="true"]{ background:var(--invert); color:var(--invert-ink); box-shadow:none; }
 .tag.pop{ animation:pop .28s var(--ease); }
 
-.tips{ display:grid; grid-template-columns:repeat(4,1fr); gap:7px; }
-.tips button{
+/* Сетка минут живёт по тем же правилам, что и чаевые: четыре в ряд,
+   выбранное — инверсией. Один набор правил на две одинаковые сетки. */
+.tips, .slots{ display:grid; grid-template-columns:repeat(4,1fr); gap:7px; }
+.slots{ margin-top:14px; }
+.tips button, .slots button{
   padding:12px 4px; border-radius:var(--r-inner);
   background:var(--surface); text-align:center;
   font-size:14px; font-weight:600;
   box-shadow:var(--shadow-card);
   transition:background .16s var(--ease), color .16s var(--ease);
 }
-.tips button[aria-pressed="true"]{ background:var(--invert); color:var(--invert-ink); box-shadow:none; }
+.tips button[aria-pressed="true"],
+.slots button[aria-pressed="true"]{ background:var(--invert); color:var(--invert-ink); box-shadow:none; }
 
 /* --- кнопки --- */
 .btn{
@@ -1297,8 +1324,11 @@ button{ background:none; border:0; cursor:pointer; text-align:left; }
 <div class="app" id="scr-home">
 
   <header class="head">
-    <div class="head__hi" id="greeting">Добрый день</div>
-    <button class="ava" id="ava-btn" type="button" aria-label="Кабинет">ДА</button>
+    <div class="head__top">
+      <span class="logo">Bag<i>Go</i></span>
+      <button class="ava" id="ava-btn" type="button" aria-label="Кабинет">ДА</button>
+    </div>
+    <h1 class="head__hi" id="greeting">Добрый день</h1>
   </header>
 
   <main class="feed">
@@ -1501,18 +1531,18 @@ const ZONE_ROUTE_OUT = {
    набора не от любви к грамматике: по-русски «каждая следующая сумка»,
    но «каждый следующий чемодан», и рассогласование видно сразу. */
 const SIZES = [
-  { id:'hand', name:'Ручная кладь', hint:'до 10 кг', base:350,
+  { id:'hand', name:'Ручная кладь', hint:'до 10 кг', base:190,
     unit:['сумка', 'сумки', 'сумок'],
-    next:'Каждая следующая сумка — 100 ₽',
-    warn:'С четвёртой сумки работают двое: +350 ₽' },
-  { id:'case', name:'Чемоданы',     hint:'10–25 кг', base:450,
+    next:'Каждая следующая сумка — 50 ₽',
+    warn:'С четвёртой сумки работают двое: +200 ₽' },
+  { id:'case', name:'Чемоданы',     hint:'10–25 кг', base:250,
     unit:['чемодан', 'чемодана', 'чемоданов'],
-    next:'Каждый следующий чемодан — 100 ₽',
-    warn:'С четвёртого чемодана работают двое: +350 ₽' },
-  { id:'big',  name:'Крупное',      hint:'от 25 кг', base:650,
+    next:'Каждый следующий чемодан — 50 ₽',
+    warn:'С четвёртого чемодана работают двое: +200 ₽' },
+  { id:'big',  name:'Крупное',      hint:'от 25 кг', base:350,
     unit:['вещь', 'вещи', 'вещей'],
-    next:'Каждая следующая вещь — 100 ₽',
-    warn:'С четвёртой вещи работают двое: +350 ₽' }
+    next:'Каждая следующая вещь — 50 ₽',
+    warn:'С четвёртой вещи работают двое: +200 ₽' }
 ];
 
 const MARKS = ['Вежливый', 'Быстро', 'Аккуратно с багажом', 'Помог с посадкой'];
@@ -1533,8 +1563,10 @@ const HOW = [
 ];
 
 /* Чаевые фиксированной суммой: у переноски багажа нет чека, от которого
-   считать проценты, — есть количество мест и физическая работа. */
-const TIPS = [0, 100, 200, 300];
+   считать проценты, — есть количество вещей и физическая работа.
+   Шаги подобраны под сам заказ: сотня поверх двухсот пятидесяти — это уже
+   сорок процентов, и предлагать её первой значит просить неловкости. */
+const TIPS = [0, 50, 100, 200];
 
 /* Носильщик один: фотография у нас одна, а подставлять одно лицо трём разным
    именам — ровно то враньё, которое видно с первого взгляда. */
@@ -1547,17 +1579,17 @@ const PORTERS = [
    что таких чеков наш собственный калькулятор выдать не может. */
 /* sum — итог с чаевыми, ровно как его записывает submitRating. Остальное
    нужно чеку: без размера и числа мест сумма выглядит взятой с потолка.
-   Цифры сходятся с calc(): 350 ₽ за первое место, 100 ₽ за каждое следующее,
-   вторая пара рук на крупное — ещё 350 ₽. */
+   Цифры сходятся с calc(): цена первой вещи по её размеру, 50 ₽ за каждую
+   следующую, с четвёртой — ещё 200 ₽ за вторую пару рук. */
 const HISTORY = [
-  { date:'12 августа', st:'yar', time:'09:40', zone:'Стойка регистрации', size:'case', bags:2, tip:100, sum:650,  stars:5 },
-  { date:'4 августа',  st:'kur', time:'18:05', zone:'Зал ожидания',       size:'case', bags:1, tip:0,   sum:450,  stars:5 },
-  { date:'27 июля',    st:'len', time:'07:15', zone:'Стойка регистрации', size:'hand', bags:1, tip:100, sum:450,  stars:5, dir:'out', car:9, platform:1 },
-  { date:'19 июля',    st:'yar', time:'13:50', zone:'Камера хранения',    size:'big',  bags:1, tip:100, sum:1100, stars:4 },
-  { date:'3 июля',     st:'kur', time:'21:30', zone:'Камера хранения',    size:'hand', bags:1, tip:0,   sum:350,  stars:4, dir:'out', car:5, platform:4 },
-  { date:'21 июня',    st:'len', time:'11:20', zone:'Зал ожидания',       size:'case', bags:1, tip:100, sum:550,  stars:5 },
-  { date:'8 июня',     st:'yar', time:'16:45', zone:'Стойка регистрации', size:'hand', bags:1, tip:0,   sum:350,  stars:5 },
-  { date:'30 мая',     st:'kur', time:'08:10', zone:'Зал ожидания',       size:'case', bags:2, tip:0,   sum:550,  stars:4 }
+  { date:'12 августа', st:'yar', time:'09:40', zone:'Стойка регистрации', size:'case', bags:2, tip:100, sum:400,  stars:5 },
+  { date:'4 августа',  st:'kur', time:'18:05', zone:'Зал ожидания',       size:'case', bags:1, tip:0,   sum:250,  stars:5 },
+  { date:'27 июля',    st:'len', time:'07:15', zone:'Стойка регистрации', size:'hand', bags:1, tip:100, sum:300,  stars:5, dir:'out', car:9, platform:1 },
+  { date:'19 июля',    st:'yar', time:'13:50', zone:'Камера хранения',    size:'big',  bags:1, tip:100, sum:450, stars:4 },
+  { date:'3 июля',     st:'kur', time:'21:30', zone:'Камера хранения',    size:'hand', bags:1, tip:0,   sum:200,  stars:4, dir:'out', car:5, platform:4 },
+  { date:'21 июня',    st:'len', time:'11:20', zone:'Зал ожидания',       size:'case', bags:1, tip:100, sum:350,  stars:5 },
+  { date:'8 июня',     st:'yar', time:'16:45', zone:'Стойка регистрации', size:'hand', bags:1, tip:0,   sum:200,  stars:5 },
+  { date:'30 мая',     st:'kur', time:'08:10', zone:'Зал ожидания',       size:'case', bags:2, tip:0,   sum:300,  stars:4 }
 ];
 
 const MONTHS = {
@@ -1623,7 +1655,8 @@ const state = {
   zone:'reg',
   size:'case',
   bags:1,
-  when:'arrive',              /* встретить сейчас или к прибытию поезда */
+  when:'arrive',              /* сейчас, по билету или в выбранную минуту */
+  atTime:'',                  /* выбранная минута, пока when === 'time' */
   note:'',                    /* комментарий носильщику */
   stage:'idle',               /* idle → searching → assigned → arrived → picked → delivered → rating */
   porter:null,
@@ -1663,13 +1696,16 @@ function stationOf(){
 function zoneOf(){ return ZONES.find(z => z.id === state.zone); }
 function sizeOf(){ return SIZES.find(s => s.id === state.size); }
 
-/* 350 ₽ за первое место и 100 ₽ за каждое следующее. Второй носильщик —
-   ещё 350 ₽: это вторая пара рук, а не наценка. От зоны цена не зависит:
-   все точки внутри вокзала, и разница в паре сотен шагов. */
+/* Цена первой вещи зависит от её размера, каждая следующая стоит 50 ₽.
+   Второй носильщик — ещё 200 ₽: это вторая пара рук, а не наценка,
+   и зовут её количество, а не вес. Один человек с тележкой увозит и
+   тридцать килограммов; чего он не может — уследить за четырьмя вещами
+   сразу в потоке людей. От зоны цена не зависит: все точки внутри
+   вокзала, и разница в паре сотен шагов. */
 function calc(){
   const st = stationOf(), zn = zoneOf(), sz = sizeOf();
-  const two = state.size === 'big' || state.bags > 3;
-  const sum = sz.base + 100 * (state.bags - 1) + (two ? 350 : 0);
+  const two = state.bags > 3;
+  const sum = sz.base + 50 * (state.bags - 1) + (two ? 200 : 0);
   return { sum:sum, people: two ? 2 : 1, st:st, zn:zn };
 }
 
@@ -1698,35 +1734,59 @@ function outbound(){ return !!state.trip && state.trip.dir === 'out'; }
 function destName(){ return outbound() ? 'Вагон ' + state.trip.car : zoneOf().name; }
 function destGen(){  return outbound() ? 'вагона ' + state.trip.car : zoneOf().gen; }
 
-/* Уезжающего носильщик встречает не в минуту отправления: до вагона ещё идти,
-   а багаж перед этим надо принять и записать. */
-function minusMin(hhmm, m){
+/* Сдвиг по часам в обе стороны, с переходом через полночь: поезда в 00:20
+   бывают, и подача к ним считается на вчерашние сутки. */
+function shiftMin(hhmm, m){
   const p = hhmm.split(':');
-  let t = (+p[0]) * 60 + (+p[1]) - m;
-  if(t < 0) t += 24 * 60;
+  let t = ((+p[0]) * 60 + (+p[1]) + m) % 1440;
+  if(t < 0) t += 1440;
   return String(Math.floor(t / 60)).padStart(2, '0') + ':' +
          String(t % 60).padStart(2, '0');
+}
+
+/* Уезжающего носильщик встречает не в минуту отправления: до вагона ещё идти,
+   а багаж перед этим надо принять и записать. */
+function boardTime(){ return shiftMin(state.trip.time, -25); }
+
+/* Часы телефона нужны ровно в одном месте — когда билета ещё нет
+   и отсчитывать сетку не от чего. */
+function nowHM(){
+  const d = new Date();
+  return String(d.getHours()).padStart(2, '0') + ':' +
+         String(d.getMinutes()).padStart(2, '0');
+}
+
+/* Восемь шагов по пятнадцать минут — два часа выбора. Больше не нужно:
+   носильщика зовут в день поездки и под конкретный поезд, а не на неделю
+   вперёд. Край сетки всегда упирается в билет, поэтому промахнуться
+   мимо своего поезда нельзя — таких минут в списке просто нет. */
+function timeSlots(){
+  const n = 8, step = 15, out = [];
+  const anchor = state.trip ? (outbound() ? boardTime() : state.trip.time)
+                            : shiftMin(nowHM(), 15);
+  for(let i = 0; i < n; i++)
+    out.push(shiftMin(anchor, outbound() ? -step * (n - 1 - i) : step * i));
+  return out;
 }
 
 /* Когда встретят. Точка отсчёта у пассажира одна — время прибытия из билета:
    либо он уже на перроне и носильщик идёт сейчас, либо поезд ещё в пути
    и встреча назначена на минуту прибытия. */
 function whenText(){
-  if(state.when === 'now') return 'через ' + stationOf().wait + ' мин';
+  if(state.when === 'now')  return 'через ' + stationOf().wait + ' мин';
+  if(state.when === 'time') return 'в ' + state.atTime;
   if(!state.trip) return 'к прибытию поезда';
-  return 'в ' + (outbound() ? minusMin(state.trip.time, 25) : state.trip.time);
+  return 'в ' + (outbound() ? boardTime() : state.trip.time);
 }
 
-/* Цена слушается количества мест сильнее, чем размера: каждое следующее место
-   стоит 100 ₽, а четвёртое зовёт вторую пару рук и добавляет сразу 350 ₽.
+/* Цена слушается количества вещей сильнее, чем размера: каждая следующая
+   стоит 50 ₽, а четвёртая зовёт вторую пару рук и добавляет сразу 200 ₽.
    Сказать об этом надо до нажатия плюса — после это уже не предупреждение,
    а объяснение скачка. */
 function bagsHint(){
   const sz = sizeOf();
-  if(state.size === 'big')
-    return { txt:'Крупное несут двое: +350 ₽', warn:false };
   if(state.bags >= 4)
-    return { txt:'Работают двое: +350 ₽ в сумме', warn:true };
+    return { txt:'Работают двое: +200 ₽ в сумме', warn:true };
   if(state.bags === 3)
     return { txt:sz.warn, warn:true };
   return { txt:sz.next, warn:false };
@@ -1952,6 +2012,7 @@ const SHEETS = {
   stinfo:  { title:'Вокзал',            render:sheetStationInfo },
   cmnt:    { title:'Комментарий',       render:sheetComment },
   zmap:    { title:'Место встречи',     render:sheetZoneMap },
+  when:    { title:'Во сколько встретить', render:sheetWhen },
   note:    { title:'Носильщик',         render:sheetNote }
 };
 
@@ -2343,9 +2404,11 @@ function sheetZoneMap(){
   foot(mainBtn('zone-done', 'Понятно'));
 }
 
-/* Два варианта времени, а не один: пассажир либо уже стоит с чемоданами
-   на перроне, либо ещё едет — и в обоих случаях ему нужна не «подача от
-   10 мин» вообще, а конкретная минута. */
+/* Три ответа, и каждый — минута, а не обещание. «Сейчас» для того, кто уже
+   стоит с чемоданами; «по билету» для того, кто ещё едет; «ко времени» для
+   того, кто приедет на вокзал заранее и знает во сколько.
+   Номер платформы с кнопок снят: он написан строкой выше, в карточке
+   маршрута, а ширины на третий вариант иначе не хватает. */
 function whenHTML(){
   const st = stationOf(), t = state.trip;
   const opt = (id, nm, sub) =>
@@ -2354,14 +2417,30 @@ function whenHTML(){
       '<b>' + nm + '</b><span class="nums">' + sub + '</span>' +
     '</button>';
 
-  if(outbound())
-    return opt('now', 'Сейчас', 'через ' + st.wait + ' мин') +
-      opt('arrive', 'К поезду',
-          'в ' + minusMin(t.time, 25) + ' · платформа ' + t.platform);
-
   return opt('now', 'Сейчас', 'через ' + st.wait + ' мин') +
-    opt('arrive', 'К прибытию',
-        t ? t.time + ' · платформа ' + t.platform : 'когда придёт поезд');
+    (outbound()
+      ? opt('arrive', 'К поезду',  'в ' + boardTime())
+      : opt('arrive', 'К приезду', t ? 'в ' + t.time : 'по билету')) +
+    opt('time', 'Ко времени',
+        state.when === 'time' && state.atTime ? 'в ' + state.atTime : 'выбрать');
+}
+
+/* Сетка минут. Выбор применяется на месте и закрывает шит: подтверждать
+   отдельной кнопкой нечего — нажатая минута и есть подтверждение. */
+function sheetWhen(){
+  body(
+    '<p class="lead">' + (outbound()
+      ? 'Подойдёт в зал к выбранной минуте и заберёт багаж. Позже ' +
+        boardTime() + ' встречать поздно: до вагона ещё идти.'
+      : 'Встретит у выхода с платформы. Раньше прибытия поезда встречать ' +
+        'некого, поэтому отсчёт идёт от него.') + '</p>' +
+    '<div class="slots">' + timeSlots().map(hm =>
+      '<button type="button" data-act="slot" data-t="' + hm + '" ' +
+        'aria-pressed="' + (state.when === 'time' && state.atTime === hm) + '">' +
+        '<span class="nums">' + hm + '</span>' +
+      '</button>').join('') + '</div>'
+  );
+  foot('');
 }
 
 /* Расчёт столбиком, а не строчкой-сноской: когда слагаемые видно по одному,
@@ -2373,12 +2452,10 @@ function billHTML(){
 
   if(state.bags > 1)
     rows.push(['Ещё ' + (state.bags - 1) + ' ' +
-      plural(state.bags - 1, u[0], u[1], u[2]), 100 * (state.bags - 1)]);
+      plural(state.bags - 1, u[0], u[1], u[2]), 50 * (state.bags - 1)]);
 
   if(r.people === 2)
-    rows.push([state.size === 'big'
-      ? 'Второй носильщик — крупный багаж'
-      : 'Второй носильщик — от четырёх ' + u[2], 350]);
+    rows.push(['Второй носильщик — от четырёх ' + u[2], 200]);
 
   return rows.map(row =>
       '<span class="bill__r"><span>' + row[0] + '</span>' +
@@ -3170,7 +3247,22 @@ function onAct(e){
     return paintPage();          /* вернулись на форму — цена уже новая */
   }
 
-  if(act === 'when'){ state.when = el.dataset.id; return renderBags(); }
+  if(act === 'when'){
+    state.when = el.dataset.id;
+    renderBags();
+    /* «Ко времени» без минуты — пустое обещание, поэтому сетка открывается
+       сразу и повторным нажатием, когда минуту хотят поменять. */
+    if(state.when === 'time') return pushSheet('when');
+    return;
+  }
+
+  if(act === 'slot'){
+    state.when = 'time';
+    state.atTime = el.dataset.t;
+    closeSheet();
+    return paintPage();
+  }
+
   if(act === 'size'){ state.size = el.dataset.id; return renderBags(); }
   if(act === 'bag-plus'){  state.bags = Math.min(6, state.bags + 1); return renderBags(); }
   if(act === 'bag-minus'){ state.bags = Math.max(1, state.bags - 1); return renderBags(); }
