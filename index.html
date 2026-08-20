@@ -1937,11 +1937,19 @@ function renderTopbar(){
   $('greeting').textContent = greeting();
 }
 
+/* Конец пути уезжающего — вагон, и показан он тем же снимком платформы,
+   что в карточке маршрута и в чеке. Плоская чёрточка среди объёмных предметов
+   читалась как сбой вёрстки, а не как другой тип поездки. */
+function carIc(){
+  return '<span class="row__ic row__ic--shot">' +
+    photo(PHOTOS.meet, '', 'ic3d', icon('plat', 21)) +
+  '</span>';
+}
+
 function histRow(h, i){
   const out = h.dir === 'out';
   return '<button class="row" type="button" data-act="past" data-i="' + i + '">' +
-    (out ? '<span class="row__ic">' + icon('plat', 21) + '</span>'
-         : zoneIc(zoneByName(h.zone))) +
+    (out ? carIc() : zoneIc(zoneByName(h.zone))) +
     '<span class="row__body">' +
       '<span class="row__label">' + h.date + ' · ' +
         (out ? 'вагон ' + h.car : h.zone.toLowerCase()) + '</span>' +
