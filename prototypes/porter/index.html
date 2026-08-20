@@ -57,7 +57,8 @@
    ========================================================================= */
 :root{
   --bg:#f3f0ea;
-  --surface:#ffffff;
+  --surface:#fdfaf3;         /* тёплый айвори: чистый белый рядом с рисунками
+                                читается как лист другого сорта бумаги */
   --surface-2:#f4f0e8;
   --ink:#221f1a;
   --ink-2:#7d7568;
@@ -144,6 +145,10 @@ html[data-theme="dark"]{
   --glass-line:rgba(255,255,255,.08);
   --bg-lit:#1d1a15;
 }
+
+/* Рисунки нарисованы под светлый лист: в темноте их собственные фоны светятся
+   ярче всего на экране. Гасим — не перекрашивая, только светлоту. */
+html[data-theme="dark"] img{ filter:brightness(.88) saturate(.94); }
 
 *{ margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
 
@@ -510,8 +515,18 @@ button{ background:none; border:0; cursor:pointer; text-align:left; }
 .sheet__body{
   flex:1; min-height:0;
   overflow-y:auto; -webkit-overflow-scrolling:touch;
-  padding:0 16px 8px;
+  padding:0 16px calc(20px + env(safe-area-inset-bottom));
   display:flex; flex-direction:column; gap:12px;
+  scrollbar-width:none;
+}
+.sheet__body::-webkit-scrollbar{ display:none; }
+
+/* Полосы прокрутки на телефоне нет, а знать, что лента не кончилась, надо.
+   Нижний край гаснет, пока не долистали до конца: размытый край — значит
+   там ещё есть, ровный — значит всё. */
+.sheet__body--more{
+  -webkit-mask-image:linear-gradient(to bottom, #000 calc(100% - 44px), transparent);
+  mask-image:linear-gradient(to bottom, #000 calc(100% - 44px), transparent);
 }
 /* Содержимое шита прокручивается, а не ужимается: без этого флекс сплющивал
    блоки под высоту экрана и от фото вокзала оставалась полоска. */
@@ -1645,6 +1660,15 @@ function paintSheet(){
   host = 'sheet';
   def.render(cur.arg);
   host = 'page';
+
+  sheetEdge();
+}
+
+/* Долистали до конца — край перестаёт гаснуть */
+function sheetEdge(){
+  const b = $('sheet-body');
+  b.classList.toggle('sheet__body--more',
+    b.scrollHeight - b.clientHeight - b.scrollTop > 8);
 }
 
 function closeSheet(){
@@ -2478,6 +2502,9 @@ $('st-cards').addEventListener('click', (e) => {
 $('page-back').addEventListener('click', backPage);
 $('sheet-close').addEventListener('click', closeSheet);
 $('sheet-back').addEventListener('click', backSheet);
+
+$('sheet-body').addEventListener('scroll', sheetEdge, { passive:true });
+$('sheet-body').addEventListener('load', sheetEdge, true);
 
 function onAct(e){
   if(e.target.closest('[data-close]')) return closeSheet();
