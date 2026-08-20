@@ -832,6 +832,51 @@ button{ background:none; border:0; cursor:pointer; text-align:left; }
 .meet__txt b{ display:block; font-size:15px; font-weight:700; letter-spacing:-.02em; }
 .meet__txt span{ display:block; font-size:13px; color:var(--ink-2); margin-top:2px; }
 
+/* --- схема вокзала ------------------------------------------------------
+   Здание — один сплошной блок: внутренности объекта транспортной
+   инфраструктуры показывать нельзя (ФЗ-16). Платформы и площадь видно
+   на любой открытой карте, поэтому они на схеме есть. */
+.smap{
+  background:var(--surface); border-radius:var(--r-card);
+  padding:12px 10px 6px; box-shadow:var(--shadow-card);
+}
+.smap svg{ display:block; width:100%; height:auto; font-family:inherit; }
+
+.smap__plat{ fill:var(--surface-2); }
+.smap__plat.on{ fill:color-mix(in srgb, var(--invert) 13%, var(--surface-2)); }
+.smap__rail{ stroke:var(--line); stroke-width:1.5; stroke-dasharray:3 5; }
+.smap__pn{ fill:var(--ink-2); font-weight:600; }
+.smap__pn.on{ fill:var(--ink); font-weight:800; }
+
+.smap__bld{ fill:var(--invert); }
+.smap__bldnm{ fill:var(--invert-ink); font-weight:700; letter-spacing:-.02em; }
+
+/* Пунктир, а не линия: это последовательность точек, а не проложенный путь */
+.smap__path{
+  fill:none; stroke:var(--ink); stroke-width:2; opacity:.5;
+  stroke-linecap:round; stroke-linejoin:round; stroke-dasharray:1 6;
+}
+
+.smap__dot{ fill:var(--ink); }
+.smap__wave{ fill:var(--ink); animation:smapWave 2.4s var(--ease) infinite; }
+@keyframes smapWave{ 0%{ r:8; opacity:.26; } 70%,100%{ r:20; opacity:0; } }
+/* Подпись стоит прямо на пунктире маршрута — обводим её цветом карточки,
+   иначе точки просвечивают сквозь буквы. */
+.smap__meetnm{
+  fill:var(--ink-2); font-weight:600;
+  stroke:var(--surface); stroke-width:3px; paint-order:stroke fill;
+}
+
+.smap__dest{ cursor:pointer; }
+.smap__dest rect{ fill:var(--surface-2); }
+.smap__dest image{ opacity:.4; }
+.smap__dest text{ fill:var(--ink-2); font-weight:600; }
+.smap__dest.on rect{ stroke:var(--invert); stroke-width:2; }
+.smap__dest.on image{ opacity:1; }
+.smap__dest.on text{ fill:var(--ink); font-weight:700; }
+
+@media (prefers-reduced-motion:reduce){ .smap__wave{ display:none; } }
+
 /* --- маршрутная лента (вместо карты вокзала) --- */
 .route{ display:flex; gap:0; }
 .route__pt{ flex:1; min-width:0; position:relative; text-align:center; }
@@ -1227,9 +1272,9 @@ const TRIPS = [
    Доплаты за зону нет — цена зависит только от багажа, и это правило пассажир
    может пересказать соседу. */
 const ZONES = [
-  { id:'taxi',  art:'taxi',  name:'Стоянка такси',   gen:'стоянки такси',   sub:'привокзальная площадь',   ph:'стоянка такси' },
-  { id:'metro', art:'metro', name:'Вход в метро',    gen:'входа в метро',   sub:'вестибюль станции',       ph:'метро' },
-  { id:'store', art:'store', name:'Камера хранения', gen:'камеры хранения', sub:'цокольный этаж вокзала',  ph:'хранение' }
+  { id:'taxi',  art:'taxi',  name:'Стоянка такси',   gen:'стоянки такси',   sub:'привокзальная площадь',   ph:'стоянка такси', map:'такси' },
+  { id:'metro', art:'metro', name:'Вход в метро',    gen:'входа в метро',   sub:'вестибюль станции',       ph:'метро',         map:'метро' },
+  { id:'store', art:'store', name:'Камера хранения', gen:'камеры хранения', sub:'цокольный этаж вокзала',  ph:'хранение',      map:'хранение' }
 ];
 
 /* Промежуточные точки маршрута до зоны. Это не план вокзала, а последовательность
@@ -1250,8 +1295,8 @@ const MARKS = ['Вежливый', 'Быстро', 'Аккуратно с баг
 
 /* Услуга целиком, в порядке, в котором её проходит пассажир. */
 const HOW = [
-  ['Встречает у вагона',
-   'Вагон, платформу и время прибытия носильщик берёт из вашего билета'],
+  ['Встречает у выхода с платформы',
+   'Платформу и время прибытия носильщик берёт из вашего билета'],
   ['Забирает багаж по коду',
    'Вы называете код из приложения — так видно, что багаж отдан своему носильщику'],
   ['Доносит и снимает на камеру',
@@ -1613,7 +1658,7 @@ const PAGES = {
 
 const SHEETS = {
   stinfo:  { title:'Вокзал',            render:sheetStationInfo },
-  zmap:    { title:'Карта зон',         render:sheetZoneMap },
+  zmap:    { title:'Место встречи',     render:sheetZoneMap },
   note:    { title:'Носильщик',         render:sheetNote }
 };
 
@@ -1884,54 +1929,99 @@ function sheetOrderForm(){
   renderBags();
 }
 
-/* Карта зон — не план вокзала, а дерево именованных точек обслуживания:
-   от платформы к залу прибытия и дальше к выходам. Геометрию здания
-   показывать нельзя (ФЗ-16), последовательность точек — можно. */
-/* Один и тот же рисунок нужен при выборе зоны и в справке о вокзале.
-   В справке ветки ничего не выбирают — там это схема, а не список. */
-function zoneTree(pick){
-  /* Вагон из билета — только там, где выбирают зону для своей поездки.
-     В справке о чужом вокзале эта строка была бы неправдой. */
-  const meet = pick && state.trip
-    ? 'Зона встречи · платформа ' + state.trip.platform
-    : 'Зона встречи у выхода с платформ';
-
+/* Дерево зон для справки о вокзале: от места встречи к каждой из точек.
+   Здесь ничего не выбирают — это описание услуги, а не список. */
+function zoneTree(){
   const branch = (z) => {
     /* в ветке — путь от места встречи до зоны, без описания здания;
        последняя точка совпадает с названием зоны и в подписи не нужна */
     const tail = (ZONE_ROUTE[z.id] || []).filter(nm => nm !== z.name).join(' → ');
-    const tag = pick ? 'button' : 'span';
-    return '<' + tag + ' class="zmap__leaf"' +
-      (pick ? ' type="button" data-act="zone-pick" data-id="' + z.id + '"' : '') +
-      (pick && z.id === state.zone ? ' aria-pressed="true"' : '') + '>' +
+    return '<span class="zmap__leaf">' +
       zoneIc(z, 'zmap__ic', 20) +
       '<span class="zmap__body">' +
         '<span class="zmap__nm">' + z.name + '</span>' +
         '<span class="zmap__path">' + (tail || z.sub) + '</span>' +
       '</span>' +
-    '</' + tag + '>';
+    '</span>';
   };
 
   return '<div class="zmap">' +
       '<div class="zmap__trunk">' +
-        '<span class="zmap__node"><b>' + meet + '</b><small>здесь вас встретят</small></span>' +
+        '<span class="zmap__node"><b>Зона встречи у выхода с платформ</b>' +
+          '<small>здесь вас встретят</small></span>' +
       '</div>' +
       '<div class="zmap__leaves">' + ZONES.map(branch).join('') + '</div>' +
     '</div>';
 }
 
-function sheetZoneMap(){
-  const st = stationOf();
-  body(
-    '<div class="shead">' +
-      photo(PHOTOS.station[st.id], st.name, 'shead__art',
-            '<span class="shead__art ph">фото вокзала</span>') +
-      '<div class="shead__txt"><b>' + st.name + '</b>' +
-        '<small>Путь всегда начинается в зоне встречи</small></div>' +
-    '</div>' +
+/* Схема вокзала. Намеренно грубая: полосы платформ, здание одним блоком и три
+   точки выхода. Подробная план-схема объекта транспортной инфраструктуры —
+   сведения ограниченного доступа (ФЗ-16 «О транспортной безопасности»),
+   рисовать её нельзя. Пассажиру она и не нужна: ему важно, где его заберут
+   и куда донесут, а не геометрия здания. Расположение платформ и площади
+   видно на любой открытой карте, поэтому схема законна и достаточна. */
+const MAP_PLATS = 6;
 
-    zoneTree(true)
+function stationMap(){
+  const st = stationOf();
+  const mine = state.trip ? state.trip.platform : 0;
+  const idx = mine ? (mine - 1) % MAP_PLATS : 2;
+  const pc = (i) => 46 + 44 * i;            /* середина полосы платформы */
+  const dx = [66, 155, 245];                /* три точки выхода в ряд */
+  const j = Math.max(0, ZONES.findIndex(z => z.id === state.zone));
+
+  let s = '';
+
+  for(let i = 0; i < MAP_PLATS; i++){
+    const on = mine && i === idx;
+    s += '<rect class="smap__plat' + (on ? ' on' : '') + '" x="' + (pc(i) - 15) +
+           '" y="10" width="30" height="92" rx="9"/>' +
+         '<text class="smap__pn' + (on ? ' on' : '') + '" x="' + pc(i) +
+           '" y="95" text-anchor="middle" font-size="11">' + (i + 1) + '</text>';
+    if(i) s += '<line class="smap__rail" x1="' + (pc(i) - 22) + '" y1="14" x2="' +
+                 (pc(i) - 22) + '" y2="98"/>';
+  }
+
+  s += '<rect class="smap__bld" x="14" y="152" width="283" height="46" rx="14"/>' +
+       '<text class="smap__bldnm" x="155" y="180" text-anchor="middle" font-size="12">' +
+         st.short + ' вокзал</text>';
+
+  s += '<path class="smap__path" d="M' + pc(idx) + ' 122 V175 H' + dx[j] + ' V212"/>';
+
+  s += '<g class="smap__meet" transform="translate(' + pc(idx) + ' 118)">' +
+         '<circle class="smap__wave"/><circle class="smap__dot" r="7"/>' +
+       '</g>' +
+       '<text class="smap__meetnm" x="' + pc(idx) +
+         '" y="143" text-anchor="middle" font-size="10">зона встречи</text>';
+
+  ZONES.forEach((z, i) => {
+    s += '<g class="smap__dest' + (z.id === state.zone ? ' on' : '') +
+           '" data-act="zone-pick" data-id="' + z.id + '" role="button" tabindex="0" ' +
+           'aria-label="Донести до: ' + z.name + '">' +
+           '<rect x="' + (dx[i] - 21) + '" y="212" width="42" height="42" rx="13"/>' +
+           '<image href="' + PHOTOS.zone[z.id] + '" x="' + (dx[i] - 17) +
+             '" y="216" width="34" height="34"/>' +
+           '<text x="' + dx[i] + '" y="268" text-anchor="middle" font-size="10">' +
+             z.map + '</text>' +
+         '</g>';
+  });
+
+  return '<div class="smap"><svg viewBox="0 0 311 276" role="img" ' +
+    'aria-label="Схема: платформы, здание вокзала и три точки, куда доносят багаж">' +
+    s + '</svg></div>';
+}
+
+function sheetZoneMap(){
+  body(
+    '<p class="lead">' + (state.trip
+      ? 'Носильщик ждёт у выхода с платформы ' + state.trip.platform +
+        '. Ищите жёлтый указатель с буквой «Н».'
+      : 'Носильщик ждёт у выхода с платформ, под жёлтым указателем с буквой «Н».') +
+    '</p>' +
+    stationMap() +
+    '<p class="note">Куда донести багаж — выберите значок внизу схемы.</p>'
   );
+  foot(mainBtn('zone-done', 'Готово'));
 }
 
 function renderBags(){
@@ -2329,7 +2419,7 @@ function sheetStationInfo(id){
       '</span>').join('') + '</div>' +
 
     '<div class="group">Куда доносим багаж</div>' +
-    zoneTree(false)
+    zoneTree()
   );
 }
 
@@ -2582,9 +2672,15 @@ function onAct(e){
 
   if(act === 'zone-map')  return pushSheet('zmap');
 
+  /* На схеме выбор не закрывает шит: маршрут перерисовывается на месте,
+     и видно, куда именно поведут багаж. */
   if(act === 'zone-pick'){
     state.zone = el.dataset.id;
     say('Зона: ' + ZONES.find(z => z.id === state.zone).name);
+    return paintSheet();
+  }
+
+  if(act === 'zone-done'){
     closeSheet();
     return paintPage();          /* вернулись на форму — цена уже новая */
   }
