@@ -1,10 +1,6 @@
-# служебные worktree агентов
-.claude/worktrees/
-.claude/settings.local.json
-
 # инструменты разработки, к продукту отношения не имеют
+.claude/
 .agents/
-.claude/skills/
 
 # справочные материалы и черновики: лежат рядом, но в репозиторий не идут
 _ref/
