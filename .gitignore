@@ -2,9 +2,14 @@
 .claude/worktrees/
 .claude/settings.local.json
 
-# скиллы ставятся через `npx skills add`, версии зафиксированы в skills-lock.json
+# инструменты разработки, к продукту отношения не имеют
 .agents/
 .claude/skills/
+
+# справочные материалы и черновики: лежат рядом, но в репозиторий не идут
+_ref/
+prototypes/porter/front.html
+prototypes/porter/ref-trainporter-fare.html
 
 # secrets
 .env
