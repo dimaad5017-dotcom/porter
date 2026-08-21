@@ -2,30 +2,6 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "proto-skills",
-      "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "8765", "--directory", "prototypes/skills"],
-      "port": 8765
-    },
-    {
-      "name": "proto-plain",
-      "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "8766", "--directory", "prototypes/plain"],
-      "port": 8766
-    },
-    {
-      "name": "proto-light",
-      "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "8767", "--directory", "prototypes/light"],
-      "port": 8767
-    },
-    {
-      "name": "proto-ticket",
-      "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "8768", "--directory", "prototypes/ticket"],
-      "port": 8768
-    },
-    {
       "name": "proto-porter",
       "runtimeExecutable": "python",
       "runtimeArgs": ["-m", "http.server", "8771", "--directory", "prototypes/porter"],
